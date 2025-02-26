@@ -112,13 +112,12 @@
 .dapp-core-component__walletConnectLoginContainerStyles__xPortal-modal-close-button{
   @apply bg-white text-black !important;
 }
-/* 
-.dapp-core-component__transactionsToastList-styles__toasts 
-.dapp-core-component__transactionsToastList-styles__toastWrapper 
-.dapp-custom-toast {
-  @apply z-[99999] !important;
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
-.dapp-core-component__transactionsToastList-styles__toasts 
-.transactions-toast-list {
-  @apply z-[99999] !important;
-} */

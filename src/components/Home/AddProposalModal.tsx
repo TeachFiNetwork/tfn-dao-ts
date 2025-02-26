@@ -44,18 +44,30 @@ import BigNumber from "bignumber.js";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { BNtoBytes, numberToBytes } from "@/utils/functions";
 
-const validationSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  token: z.string().min(1, "Token is required"),
-  paymentToken: z.string().min(1, "Payment token is required"),
-  price: z.string().min(1, "Price is required"),
-  minBuy: z.string().min(1, "Min buy is required"),
-  maxBuy: z.string().min(1, "Max buy is required"),
-  startDate: z.number().min(1, "Start date is required"),
-  endDate: z.number().min(1, "End date is required"),
-  kycEnforced: z.number(),
-});
+const validationSchema = z
+  .object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().min(1, "Description is required"),
+    token: z.string().min(1, "Token is required"),
+    paymentToken: z.string().min(1, "Payment token is required"),
+    price: z.string().min(1, "Price is required"),
+    minBuy: z.string().min(1, "Min buy is required"),
+    maxBuy: z.string().min(1, "Max buy is required"),
+    startDate: z.number().min(1, "Start date is required"),
+    endDate: z.number().min(1, "End date is required"),
+    kycEnforced: z.number(),
+  })
+  .refine(
+    (data) => {
+      const minBuy = parseFloat(data.minBuy);
+      const maxBuy = parseFloat(data.maxBuy);
+      return minBuy < maxBuy;
+    },
+    {
+      message: "Min buy must be lower than max buy",
+      path: ["minBuy"], // Shows the error on the minBuy field
+    }
+  );
 
 export const AddProposalModal = () => {
   const { address } = useGetAccount();
@@ -120,6 +132,8 @@ export const AddProposalModal = () => {
     setValue,
     setError,
     reset,
+    getValues,
+    clearErrors,
   } = useForm<Launchpad>({
     defaultValues: {
       title: "",
@@ -198,7 +212,11 @@ export const AddProposalModal = () => {
       <DialogTrigger asChild>
         <Tooltip>
           <TooltipTrigger className="flex items-start justify-start">
-            <Button variant="outline" disabled={!address} onClick={() => setShowModal(!showModal)}>
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={!address}
+              onClick={() => setShowModal(!showModal)}>
               <Plus className="text-emerald-500" />
               Launchpad
             </Button>
@@ -334,7 +352,25 @@ export const AddProposalModal = () => {
                   <Label htmlFor="maxbuy" className="pl-1 text-gray-700">
                     Max buy
                   </Label>
-                  <Input type="number" id="maxbuy" className="shadow" {...register("maxBuy")} />
+                  <Input
+                    type="number"
+                    id="maxbuy"
+                    className="shadow"
+                    {...register("maxBuy", {
+                      onChange: (e) => {
+                        const maxValue = parseFloat(e.target.value);
+                        const minValue = parseFloat(getValues("minBuy"));
+                        if (minValue && maxValue && minValue >= maxValue) {
+                          setError("minBuy", {
+                            type: "manual",
+                            message: "Min buy must be lower than max buy",
+                          });
+                        } else {
+                          clearErrors("minBuy");
+                        }
+                      },
+                    })}
+                  />
                   {errors.maxBuy && <p className="text-red-500 text-sm">{errors.maxBuy.message}</p>}
                 </div>
               </div>

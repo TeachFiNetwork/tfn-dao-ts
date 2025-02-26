@@ -4,6 +4,13 @@ import { VoteDownModal } from "@/components/Home/VoteDownModal";
 import { VoteUpModal } from "@/components/Home/VoteUpModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { contracts, ElrondGatewayUrl, ONE } from "@/utils/config";
 import { bytesToBN, formatAddress, formatNumber, numberToBytes } from "@/utils/functions";
@@ -22,7 +29,7 @@ export function Home() {
   const { viewMethod, callMethod } = useInteraction();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState("Active");
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
   const navigate = useNavigate();
 
@@ -49,7 +56,7 @@ export function Home() {
       const franchise = await viewMethod({
         contract: contracts.DAO,
         method: "getProposals",
-        args: [new U64Value(10), new U64Value(15)],
+        args: [new U64Value(0), new U64Value(20)],
       }).catch((err) => {
         console.log(err);
       });
@@ -95,7 +102,7 @@ export function Home() {
         </h4>
       </div>
       <div className="h-32"></div>
-      <div className="flex flex-row justify-between">
+      <div className="md:flex hidden flex-row  justify-between">
         <Tabs defaultValue="active" className="w-[600px]" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="viewAll">View all</TabsTrigger>
@@ -109,6 +116,22 @@ export function Home() {
         <AddProposalModal />
       </div>
 
+      <div className="flex md:hidden flex-col justify-between w-full gap-2">
+        <Select onValueChange={setActiveTab}>
+          <SelectTrigger>
+            <SelectValue placeholder={activeTab} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="viewAll">View all</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="defeated">Defeated</SelectItem>
+            <SelectItem value="succeeded">Succeeded</SelectItem>
+            <SelectItem value="executed">Executed</SelectItem>
+          </SelectContent>
+        </Select>
+        <AddProposalModal />
+      </div>
       <div className="flex justify-center items-center py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {filteredProposals.map((token) => (
