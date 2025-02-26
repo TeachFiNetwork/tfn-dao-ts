@@ -1,302 +1,325 @@
-import glassFromProblem from "@/assets/appImg/glassFromProblems.png";
-import guySvg from "@/assets/appImg/landingGuy.png";
-import missionImg from "@/assets/appImg/ourMissionImg.png";
+import { AddProposalModal } from "@/components/Home/AddProposalModal";
+import { CountdownTimer } from "@/components/Home/CountdownTimer";
+import { VoteDownModal } from "@/components/Home/VoteDownModal";
+import { VoteUpModal } from "@/components/Home/VoteUpModal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@radix-ui/react-separator";
-import { CirclePlay, Cpu, Glasses, LockKeyhole, Star, WalletMinimal } from "lucide-react";
-import britishSchool from "@/assets/appImg/ScoalaRomanoBritanica.png";
-import stakingAgency from "@/assets/appImg/stakingAgency.png";
-import multiversx from "@/assets/appImg/multiversx.png";
-import { teamMembers } from "@/utils/persons";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { useIsMobile } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { contracts, ElrondGatewayUrl, ONE } from "@/utils/config";
+import { bytesToBN, formatAddress, formatNumber, numberToBytes } from "@/utils/functions";
+import { useInteraction } from "@/utils/Interaction";
+import { Proposal } from "@/utils/types";
+import { Address, U64Value } from "@multiversx/sdk-core/out";
+import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
+import axios from "axios";
+import BigNumber from "bignumber.js";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function Home() {
-  const isMobile = useIsMobile();
+  const { address } = useGetAccountInfo();
+  const { hasPendingTransactions } = useGetPendingTransactions();
+  const { viewMethod, callMethod } = useInteraction();
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [tokenAmount, setTokenAmount] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState("active");
+  const [votingPeriod, setVotingPeriod] = useState<number>(0);
+  const navigate = useNavigate();
+
+  const getWalletToken = () => {
+    const url = `${ElrondGatewayUrl}/address/${address}/esdt/${ONE}`;
+    axios.get(url).then((res) => {
+      setTokenAmount(res.data.data.tokenData.balance);
+    });
+  };
+
+  const getVotiongPeriod = async () => {
+    const period = await viewMethod({
+      contract: contracts.DAO,
+      method: "getVotingPeriod",
+      args: [],
+    }).catch((err) => {
+      console.log(err);
+    });
+    setVotingPeriod(period);
+  };
+
+  useEffect(() => {
+    const getFranchise = async () => {
+      const franchise = await viewMethod({
+        contract: contracts.DAO,
+        method: "getProposals",
+        args: [new U64Value(10), new U64Value(15)],
+      }).catch((err) => {
+        console.log(err);
+      });
+      setProposals(franchise);
+    };
+    getFranchise();
+    if (address) {
+      getWalletToken();
+      getVotiongPeriod();
+    }
+  }, [hasPendingTransactions]);
+  console.log(proposals);
+
+  const filteredProposals = useMemo(() => {
+    if (activeTab === "viewAll") return proposals;
+    return proposals.filter(
+      (proposal) => proposal.status.name.toLowerCase() === activeTab.toLowerCase()
+    );
+  }, [proposals, activeTab]);
+
+  const redeemTokens = async (proposalId: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "redeem",
+      args: [new U64Value(proposalId)],
+    });
+  };
+
+  const executeProposal = async (proposalId: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "execute",
+      args: [new U64Value(proposalId)],
+    });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 space-y-16">
-      {/* Hero Section */}
-      <div className="max-w-[1400px] mx-auto">
-        <section
-          id="home"
-          className="flex flex-col md:flex-row items-center justify-between gap-8 min-h-[80vh] md:pt-0 pt-20">
-          <div className="flex-1 space-y-6">
-            <h1 className="space-y-2">
-              {isMobile ? (
-                <>
-                  <span className="text-4xl md:text-6xl font-medium block">Empowering</span>
-                  <span className="flex gap-2 flex-wrap text-4xl md:text-6xl font-medium bg-gradient-to-r from-[#1ECDBE] to-[#95A1E5] bg-clip-text text-transparent">
-                    Innovation
-                    <span className="text-black text-4xl md:text-6xl font-medium block">
-                      for the Future
-                    </span>
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-4xl md:text-6xl font-medium bg-gradient-to-r from-[#20b3a7] to-[#055370] bg-clip-text text-transparent block">
-                    Decentralized Education
-                  </span>
-                  <span className="text-4xl md:text-6xl font-medium block">
-                    for a Better Tomorrow
-                  </span>
-                </>
-              )}
-            </h1>
-            <p className="text-muted-foreground text-lg font-light max-w-xl tracking-wide">
-              Empowering schools, teachers, and students with blockchain technology to build a
-              transparent, sustainable, and innovative education system for generations to come.
-            </p>
-            <Button size="lg" variant="outline" className="md:w-auto w-full">
-              <CirclePlay className="!w-5 !h-5" />
-              Play Video
-            </Button>
-          </div>
-          <div className="flex-1">
-            <img src={guySvg} alt="Hero" className="w-full" />
-          </div>
-        </section>
+    <div className="flex flex-col w-full pt-40 md:px-20 px-5">
+      <div className="flex flex-col gap-6">
+        <h1 className="text-5xl font-semibold">DAO Proposals</h1>
+        <h4 className="text-xl font-normal text-zinc-500">
+          The latest industry news, interviews, technologies, and resources.
+        </h4>
+      </div>
+      <div className="h-32"></div>
+      <div className="flex flex-row justify-between">
+        <Tabs defaultValue="active" className="w-[600px]" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="viewAll">View all</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="defeated">Defeated</TabsTrigger>
+            <TabsTrigger value="succeeded">Succeeded</TabsTrigger>
+            <TabsTrigger value="executed">Executed</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <AddProposalModal />
       </div>
 
-      {/* Mission Section */}
-      <section id="vision" className="bg-[#E6EFF3] py-16 px-4 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 max-w-6xl mx-auto gap-8 items-center">
-          <div className="w-full max-w-[328px] mx-auto">
-            <img src={missionImg} alt="Mission" className="w-full h-auto rounded-lg shadow-lg" />
-          </div>
-          <div className="flex flex-col gap-4 text-left">
-            <div className="flex gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              ))}
-            </div>
-            <h2 className="text-3xl font-bold">Our Mission</h2>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              At TeachFi, our mission is to reshape the way education is funded and managed. By
-              leveraging blockchain technology, we empower schools to expand, reward educators
-              fairly, and provide students with better opportunities to succeed. We aim to build a
-              global ecosystem where education thrives, resources are optimized, and every child's
-              potential is unlocked.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Problems Section */}
-      <section id="problems" className="space-y-12 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-semibold text-center">Problems we Solve</h2>
-        <div className="relative flex justify-center items-center min-h-[600px] md:min-h-[600px]">
-          {/* Center Image */}
-          <div className="absolute hidden md:block top-0 translate-x-20 w-[500px]">
-            <img src={glassFromProblem} alt="Books" className="w-5/6" />
-          </div>
-
-          {/* Mobile Layout */}
-          <div className="flex flex-col md:hidden w-full gap-8 px-4">
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <WalletMinimal className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <h3 className="text-lg font-medium">Inefficient Resource Allocation</h3>
-              <p className="text-sm text-muted-foreground">
-                Traditional education systems struggle with bureaucracy, delaying funds where
-                they're needed most. TeachFi ensures that financial resources reach schools and
-                programs directly, improving their impact.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <Glasses className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <h3 className="text-lg font-medium">Teacher Undercompensation</h3>
-              <p className="text-sm text-muted-foreground">
-                Educators often face delayed or insufficient payments. With our automated systems,
-                teachers receive timely and fair compensation, motivating them to excel in their
-                roles.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <Cpu className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <h3 className="text-lg font-medium">Limited Access to Quality Funding</h3>
-              <p className="text-sm text-muted-foreground">
-                Many schools lack the tools to attract and manage necessary funds. Through tokenized
-                ecosystems, TeachFi enables schools to raise capital effectively for growth and
-                development.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <LockKeyhole className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <h3 className="text-lg font-medium">Unverifiable Student Credentials</h3>
-              <p className="text-sm text-muted-foreground">
-                Paper-based certificates and transcripts are prone to loss or forgery. TeachFi
-                digitizes student achievements on a secure platform, ensuring they can be accessed
-                and trusted throughout their lives.
-              </p>
-            </div>
-            {/* <div className="md:hidden top-0 w-full"> */}
-            <img src={glassFromProblem} alt="Books" className="md:hidden w-full" />
-            {/* </div> */}
-          </div>
-
-          {/* Desktop Layout - Left Problems */}
-          <div className="absolute hidden md:block left-0 top-0 space-y-20 text-left w-[320px]">
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <WalletMinimal className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-2">Inefficient Resource Allocation →</h3>
-                <p className="text-sm text-muted-foreground">
-                  Traditional education systems struggle with bureaucracy, delaying funds where
-                  they're needed most. TeachFi ensures that financial resources reach schools and
-                  programs directly, improving their impact.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <Glasses className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-2">Teacher Undercompensation →</h3>
-                <p className="text-sm text-muted-foreground">
-                  Educators often face delayed or insufficient payments. With our automated systems,
-                  teachers receive timely and fair compensation, motivating them to excel in their
-                  roles.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Layout - Right Problems */}
-          <div className="absolute hidden md:block right-0 top-0 space-y-20 text-right w-[300px]">
-            <div className="space-y-3">
-              <div className="ml-auto bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <Cpu className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-2">← Limited Access to Quality Funding</h3>
-                <p className="text-sm text-muted-foreground">
-                  Many schools lack the tools to attract and manage necessary funds. Through
-                  tokenized ecosystems, TeachFi enables schools to raise capital effectively for
-                  growth and development.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="ml-auto bg-[#D9E7EC] w-9 h-9 rounded-full flex items-center justify-center">
-                <LockKeyhole className="w-4 h-4 text-[#00394F]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-2">← Unverifiable Student Credentials</h3>
-                <p className="text-sm text-muted-foreground">
-                  Paper-based certificates and transcripts are prone to loss or forgery. TeachFi
-                  digitizes student achievements on a secure platform, ensuring they can be accessed
-                  and trusted throughout their lives.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Tracker Section */}
-      <section id="impact" className="space-y-8 text-center max-w-full">
-        <h2 className="text-4xl font-semibold">Impact Tracker</h2>
-        <p className="text-muted-foreground text-lg">
-          In a world where creativity meets technology, we provide the tools to craft stunning
-          interfaces and exceptional products.
-        </p>
-        <div className="flex md:flex-row flex-col justify-center items-center gap-16 mt-12">
-          <div className="text-center">
-            <h3 className="text-5xl font-bold text-[#00394F]">25+</h3>
-            <p className="text-muted-foreground">Franchises</p>
-          </div>
-
-          <Separator orientation="vertical" className="bg-black/10 w-[0.1px] h-16 md:flex hidden" />
-
-          <div className="text-center">
-            <h3 className="text-5xl font-bold text-[#00394F]">1,250</h3>
-            <p className="text-muted-foreground">Students</p>
-          </div>
-
-          <Separator orientation="vertical" className="bg-black/10 w-[0.1px] h-16 md:flex hidden" />
-
-          <div className="text-center">
-            <h3 className="text-5xl font-bold text-[#00394F]">548</h3>
-            <p className="text-muted-foreground">Employees</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="partners" className="bg-[#E6EFF3] py-10 px-4 rounded-lg w-full">
-        <div className="w-full flex flex-col justify-center items-center">
-          <h6>Partners</h6>
-          <div className="flex md:flex-row flex-wrap w-full justify-center items-center gap-8">
-            <img src={britishSchool} alt="britishSchool" />
-            <img src={stakingAgency} alt="britishSchool" className="md:w-[10rem] md:h-[2rem]" />
-            <img src={multiversx} alt="britishSchool" className=" md:w-[9rem] md:h-[1.5rem]" />
-          </div>
-        </div>
-      </section>
-
-      <section id="team" className="space-y-8 max-w-7xl mx-auto">
-        <div className="text-center space-y-4">
-          <span className="text-sm font-semibold text-muted-foreground">
-            Brilliant minds behind
-          </span>
-          <h2 className="text-4xl font-semibold">Meet our team</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Our philosophy is simple — hire a team of diverse, passionate people and foster a
-            culture that empowers you to do your best work.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-          {teamMembers.map((member, index) => (
-            <Card
-              key={index}
-              className="bg-slate-100/50 border-0 w-[19rem] min-w-[13.5rem] h-[25rem]">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center space-y-3">
-                    <Avatar className="w-24 h-24 flex items-center justify-center">
-                      <AvatarImage
-                        src={member.image}
-                        alt={member.name}
-                        className="!w-[6rem] !h-[6rem]"
-                      />
-                      <AvatarFallback className="bg-slate-200 p-4 rounded-full">
-                        {member.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1 text-center">
-                      <h3 className="text-xl font-semibold">{member.name}</h3>
-                      <p className="text-sm text-muted-foreground">{member.role}</p>
-                    </div>
+      <div className="flex justify-center items-center py-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+          {filteredProposals.map((token) => (
+            <div
+              key={BigNumber(token.id).toNumber()}
+              className="relative rounded-xl p-6 border border-gray-200 bg-gray-50 shadow-sm flex flex-col max-w-[24rem] h-[40rem]">
+              <div className="flex flex-col items-start justify-between pb-4 gap-2">
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center gap-2">
+                    <h3 className="font-semibold text-[1.5rem] text-gray-900">
+                      Proposal {BigNumber(token.id).toNumber() + 1}
+                    </h3>
                   </div>
-                  <p className="text-sm text-muted-foreground text-center tracking-wide font-light">
-                    {member.description}
-                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Badge
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium hover:cursor-default gap-2 ${
+                    token.status.name === "Active"
+                      ? "bg-green-100 text-green-700 hover:bg-green-100"
+                      : token.status.name === "Succeeded"
+                        ? "bg-green-100 text-green-700 hover:bg-green-100"
+                        : token.status.name === "Executed"
+                          ? "bg-sky-100 text-sky-600 hover:bg-sky-100"
+                          : token.status.name === "Defeated"
+                            ? "bg-red-100 text-red-700 hover:bg-red-100"
+                            : "bg-gray-200 text-gray-800 hover:bg-gray-200"
+                  }`}>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      token.status.name === "Active" || token.status.name === "Succeeded"
+                        ? "bg-emerald-500"
+                        : token.status.name === "Executed"
+                          ? "bg-sky-500"
+                          : token.status.name === "Defeated"
+                            ? "bg-rose-500"
+                            : "bg-gray-500"
+                    } `}></span>
+                  {token.status.name === "Active"
+                    ? "Active"
+                    : token.status.name === "Succeeded"
+                      ? "Succeeded"
+                      : token.status.name === "Executed"
+                        ? "Executed"
+                        : token.status.name === "Defeated"
+                          ? "Defeated"
+                          : "Pending"}
+                </Badge>
+              </div>
+
+              <p className="text-base font-normal text-gray-600 h-[4.5rem] line-clamp-3">
+                {Buffer.from(token.title, "base64").toString("utf8")}
+              </p>
+
+              <div className="flex flex-col gap-1 pt-5">
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Proposer
+                  <p className="text-stone-500 font-normal">
+                    {formatAddress(token.proposer.bech32())}{" "}
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  KYC
+                  <p className="text-stone-500 font-normal">
+                    {(() => {
+                      const bytes = token.action.arguments[1];
+                      return bytes[0] === numberToBytes(1)[0] ? "Yes" : "No";
+                    })()}
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Price
+                  <p className="text-stone-500 font-normal">
+                    {BigNumber(bytesToBN(token.action.arguments[5]).toString())
+                      .dividedBy(10 ** 18)
+                      .toNumber()}{" "}
+                    ONE
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Min Buy
+                  <p className="text-stone-500 font-normal">
+                    {BigNumber(bytesToBN(token.action.arguments[6]).toString())
+                      .dividedBy(10 ** 18)
+                      .toNumber()}{" "}
+                    ONE
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Max Buy
+                  <p className="text-stone-500 font-normal">
+                    {BigNumber(bytesToBN(token.action.arguments[7]).toString())
+                      .dividedBy(10 ** 18)
+                      .toNumber()}{" "}
+                    ONE
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Start time
+                  <p className="text-stone-500 font-normal">
+                    {new Date(
+                      bytesToBN(token.action.arguments[8]).toNumber() * 1000
+                    ).toLocaleDateString()}
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  End time
+                  <p className="text-stone-500 font-normal">
+                    {new Date(
+                      bytesToBN(token.action.arguments[9]).toNumber() * 1000
+                    ).toLocaleDateString()}
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Vote period
+                  <p className="text-stone-500 font-normal">
+                    <CountdownTimer
+                      startDate={Math.floor(new Date().getTime() / 1000)}
+                      endDate={BigNumber(token.creation_timestamp).plus(votingPeriod).toNumber()}
+                    />
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Up votes
+                  <p className="text-stone-500 font-normal">
+                    {(() => {
+                      const percentage =
+                        (BigNumber(token.num_upvotes).toNumber() /
+                          (BigNumber(token.num_downvotes).toNumber() +
+                            BigNumber(token.num_upvotes).toNumber())) *
+                        100;
+                      return isNaN(percentage)
+                        ? "0"
+                        : formatNumber(BigNumber(percentage).toNumber(), 2);
+                    })()}{" "}
+                    %
+                  </p>
+                </span>
+                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                  Down votes
+                  <p className="text-stone-500 font-normal">
+                    {(() => {
+                      const percentage =
+                        (BigNumber(token.num_downvotes).toNumber() /
+                          (BigNumber(token.num_downvotes).toNumber() +
+                            BigNumber(token.num_upvotes).toNumber())) *
+                        100;
+                      // console.log(BigNumber(token.u).toNumber());
+                      return isNaN(percentage)
+                        ? "0"
+                        : formatNumber(BigNumber(percentage).toNumber(), 2);
+                    })()}{" "}
+                    %
+                  </p>
+                </span>
+              </div>
+
+              <div className="flex gap-3 mt-auto justify-center">
+                {!address ? (
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/unlock")}
+                    className="!w-full !border-0 !m-0 bg-[#00394F] hover:bg-[#00394F]/90 text-white font-semibold py-2">
+                    Connect Wallet
+                  </Button>
+                ) : (
+                  <>
+                    {token.status.name === "Active" ? (
+                      <>
+                        <VoteUpModal proposalId={token.id} oneTokenAmount={tokenAmount} />
+                        <VoteDownModal proposalId={token.id} oneTokenAmount={tokenAmount} />
+                      </>
+                    ) : token.status.name === "Succeeded" ? (
+                      <div className="flex md:flex-row flex-col w-full justify-center gap-2 items-center">
+                        <Button
+                          variant="outline"
+                          className="md:w-3/6 w-full border-2 border-[#00394F]"
+                          onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
+                          type="button">
+                          Redeem
+                        </Button>
+                        <Button
+                          className="md:w-3/6 w-full bg-[#00394F] hover:bg-[#00394F]/90"
+                          type="button"
+                          onClick={() => executeProposal(BigNumber(token.id).toNumber())}>
+                          Execute
+                        </Button>
+                      </div>
+                    ) : token.status.name === "Defeated" || token.status.name === "Executed" ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          className="w-3/6 border-2 border-[#00394F]"
+                          type="button">
+                          Redeem
+                        </Button>
+                        <Button
+                          className="w-3/6 bg-[#00394F] hover:bg-[#00394F]/90"
+                          disabled
+                          type="button">
+                          Execute
+                        </Button>
+                      </>
+                    ) : (
+                      <></>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

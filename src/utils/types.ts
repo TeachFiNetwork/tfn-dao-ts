@@ -1,4 +1,4 @@
-import { TypedValue } from "@multiversx/sdk-core/out";
+import { IAddress, TypedValue } from "@multiversx/sdk-core/out";
 import BigNumber from "bignumber.js";
 
 export type TCallMethodProperties = {
@@ -48,26 +48,51 @@ export interface IInteractionContext {
   callMethod: TCallMethod;
 }
 
-export type Token = {
-  balance: string;
-  identifier: string;
+export type Launchpad = {
+  title: string;
+  description: string;
+  token: string;
+  paymentToken: string;
+  price: string;
+  minBuy: string;
+  maxBuy: string;
+  startDate: number;
+  endDate: number;
+  kycEnforced: number;
+};
+
+export type ProposalCreation = {
+  description: string;
+  action: Action[];
+};
+
+export type Action = {
+  gas_limit: number;
+  dest_address: IAddress;
+  payment_token: string;
+  payment_amount: number;
+  endpoint_name: string;
+  arguments: Uint8Array[];
+};
+
+export type Proposal = {
+  id: BigNumber.Value;
+  proposer: IAddress;
+  title: string;
+  creation_timestamp: BigNumber.Value;
+  status: StatusProposal;
+  was_executed: boolean;
+  action: Action;
+  num_upvotes: BigNumber.Value;
+  num_downvotes: BigNumber.Value;
+};
+
+type StatusProposal = {
   name: string;
-  ticker: string;
-  valueUsd: number;
-  pngUrl: string;
-  decimals: number;
+  fields: [];
 };
 
-export type SelectedToken = Token & {
-  isSelected: boolean;
+export type Vote = {
+  token: string;
+  amount: number;
 };
-
-export enum SWAP_TYPE {
-  fixedInput = 0,
-  fixedOutput = 1,
-}
-
-export enum DexType {
-  OneDex,
-  xExchange,
-}

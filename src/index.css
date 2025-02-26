@@ -89,7 +89,7 @@
 
 .dapp-core-component__transactionsToastList-styles__toastWrapper,
 .dapp-transaction-toast {
-  @apply bg-[#252042]/30 backdrop-blur-2xl text-blue-50 border !important;
+  @apply bg-white text-black border !important;
 }
 .dapp-core-component__transactionToast-styles__close{
   @apply text-blue-50 !important;
@@ -97,7 +97,7 @@
 
 .dapp-core-component__dappModalStyles__dappModalBody,
 .dapp-modal-dialog-content-body {
-  @apply bg-[#252042] text-blue-50 border border-purple-500/30 !important;
+  @apply bg-white text-black border relative z-[9999] border-purple-500/30 !important;
 }
 
 .dapp-core-component__dappModalStyles__dappModalContent {
@@ -110,5 +110,15 @@
   @apply bg-gradient-to-r from-purple-500 to-indigo-500 !important;
 }
 .dapp-core-component__walletConnectLoginContainerStyles__xPortal-modal-close-button{
-  @apply bg-[#252042] text-blue-50 !important;
+  @apply bg-white text-black !important;
 }
+/* 
+.dapp-core-component__transactionsToastList-styles__toasts 
+.dapp-core-component__transactionsToastList-styles__toastWrapper 
+.dapp-custom-toast {
+  @apply z-[99999] !important;
+}
+.dapp-core-component__transactionsToastList-styles__toasts 
+.transactions-toast-list {
+  @apply z-[99999] !important;
+} */

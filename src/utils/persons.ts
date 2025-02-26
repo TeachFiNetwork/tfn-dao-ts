@@ -1,12 +1,11 @@
-import cristinaCatana from "@/assets/appImg/Team/CristinaCatana.png";
-import drDelphi from "@/assets/appImg/Team/DrDelphi.png";
-import anthonyCepileanescu from "@/assets/appImg/Team/AnthonyCepileanescu.png";
-import coraGabriela from "@/assets/appImg/Team/CoraGabriela.png";
-import bogdanParaschiv from "@/assets/appImg/Team/BogdanParaschiv.png";
 import alinMechenici from "@/assets/appImg/Team/AlinMechenici.png";
-import severMoldovean from "@/assets/appImg/Team/SeverMoldovean.png";
-import petriMarin from "@/assets/appImg/Team/PetriMarin.png";
+import anthonyCepileanescu from "@/assets/appImg/Team/AnthonyCepileanescu.png";
+import bogdanParaschiv from "@/assets/appImg/Team/BogdanParaschiv.png";
+import coraGabriela from "@/assets/appImg/Team/CoraGabriela.png";
+import cristinaCatana from "@/assets/appImg/Team/CristinaCatana.png";
 import horatiuPopescu from "@/assets/appImg/Team/HoratiuPopescu.png";
+import petriMarin from "@/assets/appImg/Team/PetriMarin.png";
+import severMoldovean from "@/assets/appImg/Team/SeverMoldovean.png";
 
 export const teamMembers = [
   {

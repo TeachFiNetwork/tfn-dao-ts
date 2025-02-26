@@ -1,11 +1,15 @@
-import { DustConverterAbi } from "@/utils/abiConfig.ts";
+import { TeachFiDao, TeachFiLaunchpad } from "@/utils/abiConfig.ts";
 
-export const isDev = false;
+export const isDev = true;
 
 export const contracts = {
-  DustConverter: {
-    address: "erd1qqqqqqqqqqqqqpgqlkk9xgxqdxhqfja6fa57apuurfllvg887yqse5lvdr",
-    abi: DustConverterAbi,
+  DAO: {
+    address: "erd1qqqqqqqqqqqqqpgqkm4w8fwx3ltxd5h5ydalsrmsqd38wtldvcqsll86rw",
+    abi: TeachFiDao,
+  },
+  Launchpad: {
+    address: "erd1qqqqqqqqqqqqqpgq2cgjfc9n76xkqmcfaxwgq3dzm7pm3y6fvcqses2haj",
+    abi: TeachFiLaunchpad,
   },
   Wrap0: {
     address: "erd1qqqqqqqqqqqqqpgqvc7gdl0p4s97guh498wgz75k8sav6sjfjlwqh679jy",
@@ -24,9 +28,5 @@ export const ElrondGatewayUrl = isDev
 export const ElrondApiUrl = isDev
   ? "https://devnet-api.multiversx.com"
   : "https://multiversx-api.beaconx.app/public-mainnet-api";
-export const ONEDEX_AGGREGATOR_API = isDev
-  ? "https://devnet-aggregator.onedex.app"
-  : "https://aggregator.onedex.app";
-export const ONEDEX_API = "https://api.onedex.app";
 
 export const ONE = isDev ? "ONE-83a7c0" : "ONE-f9954f";

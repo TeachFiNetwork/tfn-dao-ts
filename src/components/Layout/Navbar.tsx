@@ -52,15 +52,7 @@ export const Navbar = () => {
     logout("/").then(() => window.location.reload());
   };
 
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "Vision", href: "#vision" },
-    { label: "Statistics", href: "#impact" },
-    { label: "Partners", href: "#partners" },
-    { label: "Team", href: "#team" },
-    { label: "About", href: "#about" },
-    { label: "Applications", href: "#applications" },
-  ];
+  const navItems = [{ label: "Applications", href: "#applications" }];
 
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
@@ -107,7 +99,7 @@ export const Navbar = () => {
                       <div className="space-y-2">
                         {applicationItems.map((item, index) => {
                           return (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2" key={index}>
                               <span className="text-xl">{item.icon}</span>
                               <ListItem href="/" title={item.title}>
                                 {item.description}
