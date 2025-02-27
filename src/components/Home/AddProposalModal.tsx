@@ -134,6 +134,7 @@ export const AddProposalModal = () => {
     reset,
     getValues,
     clearErrors,
+    watch,
   } = useForm<Launchpad>({
     defaultValues: {
       title: "",
@@ -154,7 +155,7 @@ export const AddProposalModal = () => {
     setStartDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
     setValue("startDate", date ?? 0);
-    console.log(selectedDate?.toISOString());
+    // console.log(selectedDate?.toISOString());
 
     setOpenStartDate(false); // Close the popover after selection
   };
@@ -167,7 +168,7 @@ export const AddProposalModal = () => {
   };
 
   const submitProposal = async (formData: Launchpad) => {
-    console.log();
+    console.log(formData);
     const proposalCreationType = TeachFiDao.getStruct("ProposalCreationArgs");
     const proposalActionType = TeachFiDao.getStruct("Action");
 
@@ -435,7 +436,13 @@ export const AddProposalModal = () => {
                     </PopoverContent>
                   </Popover>
                   <div className="flex w-full items-center space-x-2 ">
-                    <Checkbox id="kyc" {...register("kycEnforced")} defaultChecked />
+                    <Checkbox
+                      id="kyc"
+                      checked={watch("kycEnforced") === 1}
+                      onCheckedChange={(checked) => {
+                        setValue("kycEnforced", checked ? 1 : 0);
+                      }}
+                    />
                     <label
                       htmlFor="kyc"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

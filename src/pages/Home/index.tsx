@@ -16,7 +16,7 @@ import { contracts, ElrondGatewayUrl, ONE } from "@/utils/config";
 import { bytesToBN, formatAddress, formatNumber, numberToBytes } from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
 import { Proposal } from "@/utils/types";
-import { Address, U64Value } from "@multiversx/sdk-core/out";
+import { U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";
@@ -31,7 +31,28 @@ export function Home() {
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("Active");
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
+  const [responseGate, setResponseGate] = useState<number>(0);
   const navigate = useNavigate();
+
+  const getResponseGate = async (token: string) => {
+    try {
+      const test = Buffer.from(token).toString("hex");
+      const url = `${ElrondGatewayUrl}/vm-values/query`;
+      const response = await axios.post(url, {
+        "scAddress": "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u",
+        "funcName": "getTokenProperties",
+        "args": [test],
+      });
+      if (!response.data?.data?.data?.returnData[5]) {
+        throw new Error("invalid token");
+      }
+      const data1 = await JSON.stringify(response.data.data.data.returnData[5]);
+      // console.log(Buffer.from(data1, "base64").toString().split("-")[1]);
+      setResponseGate(Number(Buffer.from(data1, "base64").toString().split("-")[1]));
+    } catch (e) {
+      throw e;
+    }
+  };
 
   const getWalletToken = () => {
     const url = `${ElrondGatewayUrl}/address/${address}/esdt/${ONE}`;
@@ -134,213 +155,221 @@ export function Home() {
       </div>
       <div className="flex justify-center items-center py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-          {filteredProposals.map((token) => (
-            <div
-              key={BigNumber(token.id).toNumber()}
-              className="relative rounded-xl p-6 border border-gray-200 bg-gray-50 shadow-sm flex flex-col max-w-[24rem] h-[40rem]">
-              <div className="flex flex-col items-start justify-between pb-4 gap-2">
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-center gap-2">
-                    <h3 className="font-semibold text-[1.5rem] text-gray-900">
-                      Proposal {BigNumber(token.id).toNumber() + 1}
-                    </h3>
+          {filteredProposals.map((token) => {
+            // console.log(Buffer.from(token.action.arguments[4]).toString());
+
+            getResponseGate(Buffer.from(token.action.arguments[4]).toString());
+            // console.log(responseGate);
+
+            return (
+              <div
+                key={BigNumber(token.id).toNumber()}
+                className="relative rounded-xl p-6 border border-gray-200 bg-gray-50 shadow-sm flex flex-col max-w-[24rem] h-[40rem]">
+                <div className="flex flex-col items-start justify-between pb-4 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between items-center gap-2">
+                      <h3 className="font-semibold text-[1.5rem] text-gray-900">
+                        Proposal {BigNumber(token.id).toNumber() + 1}
+                      </h3>
+                    </div>
                   </div>
-                </div>
-                <Badge
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium hover:cursor-default gap-2 ${
-                    token.status.name === "Active"
-                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : token.status.name === "Succeeded"
+                  <Badge
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium hover:cursor-default gap-2 ${
+                      token.status.name === "Active"
                         ? "bg-green-100 text-green-700 hover:bg-green-100"
+                        : token.status.name === "Succeeded"
+                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                          : token.status.name === "Executed"
+                            ? "bg-sky-100 text-sky-600 hover:bg-sky-100"
+                            : token.status.name === "Defeated"
+                              ? "bg-red-100 text-red-700 hover:bg-red-100"
+                              : "bg-gray-200 text-gray-800 hover:bg-gray-200"
+                    }`}>
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        token.status.name === "Active" || token.status.name === "Succeeded"
+                          ? "bg-emerald-500"
+                          : token.status.name === "Executed"
+                            ? "bg-sky-500"
+                            : token.status.name === "Defeated"
+                              ? "bg-rose-500"
+                              : "bg-gray-500"
+                      } `}></span>
+                    {token.status.name === "Active"
+                      ? "Active"
+                      : token.status.name === "Succeeded"
+                        ? "Succeeded"
                         : token.status.name === "Executed"
-                          ? "bg-sky-100 text-sky-600 hover:bg-sky-100"
+                          ? "Executed"
                           : token.status.name === "Defeated"
-                            ? "bg-red-100 text-red-700 hover:bg-red-100"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-200"
-                  }`}>
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      token.status.name === "Active" || token.status.name === "Succeeded"
-                        ? "bg-emerald-500"
-                        : token.status.name === "Executed"
-                          ? "bg-sky-500"
-                          : token.status.name === "Defeated"
-                            ? "bg-rose-500"
-                            : "bg-gray-500"
-                    } `}></span>
-                  {token.status.name === "Active"
-                    ? "Active"
-                    : token.status.name === "Succeeded"
-                      ? "Succeeded"
-                      : token.status.name === "Executed"
-                        ? "Executed"
-                        : token.status.name === "Defeated"
-                          ? "Defeated"
-                          : "Pending"}
-                </Badge>
-              </div>
+                            ? "Defeated"
+                            : "Pending"}
+                  </Badge>
+                </div>
 
-              <p className="text-base font-normal text-gray-600 h-[4.5rem] line-clamp-3">
-                {Buffer.from(token.title, "base64").toString("utf8")}
-              </p>
+                <p className="text-base font-normal text-gray-600 h-[4.5rem] line-clamp-3">
+                  {Buffer.from(token.title, "base64").toString("utf8")}
+                </p>
 
-              <div className="flex flex-col gap-1 pt-5">
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Proposer
-                  <p className="text-stone-500 font-normal">
-                    {formatAddress(token.proposer.bech32())}{" "}
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  KYC
-                  <p className="text-stone-500 font-normal">
-                    {(() => {
-                      const bytes = token.action.arguments[1];
-                      return bytes[0] === numberToBytes(1)[0] ? "Yes" : "No";
-                    })()}
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Price
-                  <p className="text-stone-500 font-normal">
-                    {BigNumber(bytesToBN(token.action.arguments[5]).toString())
-                      .dividedBy(10 ** 18)
-                      .toNumber()}{" "}
-                    ONE
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Min Buy
-                  <p className="text-stone-500 font-normal">
-                    {BigNumber(bytesToBN(token.action.arguments[6]).toString())
-                      .dividedBy(10 ** 18)
-                      .toNumber()}{" "}
-                    ONE
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Max Buy
-                  <p className="text-stone-500 font-normal">
-                    {BigNumber(bytesToBN(token.action.arguments[7]).toString())
-                      .dividedBy(10 ** 18)
-                      .toNumber()}{" "}
-                    ONE
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Start time
-                  <p className="text-stone-500 font-normal">
-                    {new Date(
-                      bytesToBN(token.action.arguments[8]).toNumber() * 1000
-                    ).toLocaleDateString()}
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  End time
-                  <p className="text-stone-500 font-normal">
-                    {new Date(
-                      bytesToBN(token.action.arguments[9]).toNumber() * 1000
-                    ).toLocaleDateString()}
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Vote period
-                  <p className="text-stone-500 font-normal">
-                    <CountdownTimer
-                      startDate={Math.floor(new Date().getTime() / 1000)}
-                      endDate={BigNumber(token.creation_timestamp).plus(votingPeriod).toNumber()}
-                    />
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Up votes
-                  <p className="text-stone-500 font-normal">
-                    {(() => {
-                      const percentage =
-                        (BigNumber(token.num_upvotes).toNumber() /
-                          (BigNumber(token.num_downvotes).toNumber() +
-                            BigNumber(token.num_upvotes).toNumber())) *
-                        100;
-                      return isNaN(percentage)
-                        ? "0"
-                        : formatNumber(BigNumber(percentage).toNumber(), 2);
-                    })()}{" "}
-                    %
-                  </p>
-                </span>
-                <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
-                  Down votes
-                  <p className="text-stone-500 font-normal">
-                    {(() => {
-                      const percentage =
-                        (BigNumber(token.num_downvotes).toNumber() /
-                          (BigNumber(token.num_downvotes).toNumber() +
-                            BigNumber(token.num_upvotes).toNumber())) *
-                        100;
-                      // console.log(BigNumber(token.u).toNumber());
-                      return isNaN(percentage)
-                        ? "0"
-                        : formatNumber(BigNumber(percentage).toNumber(), 2);
-                    })()}{" "}
-                    %
-                  </p>
-                </span>
-              </div>
+                <div className="flex flex-col gap-1 pt-5">
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Proposer
+                    <p className="text-stone-500 font-normal">
+                      {formatAddress(token.proposer.bech32())}{" "}
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    KYC
+                    <p className="text-stone-500 font-normal">
+                      {(() => {
+                        const bytes = token.action.arguments[1];
+                        return bytes[0] === numberToBytes(1)[0] ? "Yes" : "No";
+                      })()}
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Price
+                    <p className="text-stone-500 font-normal">
+                      {BigNumber(bytesToBN(token.action.arguments[5]).toString())
+                        .dividedBy(10 ** responseGate)
+                        .toNumber() +
+                        " " +
+                        Buffer.from(token.action.arguments[4]).toString().split("-")[0]}{" "}
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Min Buy
+                    <p className="text-stone-500 font-normal">
+                      {BigNumber(bytesToBN(token.action.arguments[6]).toString())
+                        .dividedBy(10 ** responseGate)
+                        .toNumber()}{" "}
+                      ONE
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Max Buy
+                    <p className="text-stone-500 font-normal">
+                      {BigNumber(bytesToBN(token.action.arguments[7]).toString())
+                        .dividedBy(10 ** responseGate)
+                        .toNumber()}{" "}
+                      ONE
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Start time
+                    <p className="text-stone-500 font-normal">
+                      {new Date(
+                        bytesToBN(token.action.arguments[8]).toNumber() * 1000
+                      ).toLocaleDateString()}
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    End time
+                    <p className="text-stone-500 font-normal">
+                      {new Date(
+                        bytesToBN(token.action.arguments[9]).toNumber() * 1000
+                      ).toLocaleDateString()}
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Vote period
+                    <p className="text-stone-500 font-normal">
+                      <CountdownTimer
+                        startDate={Math.floor(new Date().getTime() / 1000)}
+                        endDate={BigNumber(token.creation_timestamp).plus(votingPeriod).toNumber()}
+                      />
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Up votes
+                    <p className="text-stone-500 font-normal">
+                      {(() => {
+                        const percentage =
+                          (BigNumber(token.num_upvotes).toNumber() /
+                            (BigNumber(token.num_downvotes).toNumber() +
+                              BigNumber(token.num_upvotes).toNumber())) *
+                          100;
+                        return isNaN(percentage)
+                          ? "0"
+                          : formatNumber(BigNumber(percentage).toNumber(), 2);
+                      })()}{" "}
+                      %
+                    </p>
+                  </span>
+                  <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
+                    Down votes
+                    <p className="text-stone-500 font-normal">
+                      {(() => {
+                        const percentage =
+                          (BigNumber(token.num_downvotes).toNumber() /
+                            (BigNumber(token.num_downvotes).toNumber() +
+                              BigNumber(token.num_upvotes).toNumber())) *
+                          100;
+                        // console.log(BigNumber(token.u).toNumber());
+                        return isNaN(percentage)
+                          ? "0"
+                          : formatNumber(BigNumber(percentage).toNumber(), 2);
+                      })()}{" "}
+                      %
+                    </p>
+                  </span>
+                </div>
 
-              <div className="flex gap-3 mt-auto justify-center">
-                {!address ? (
-                  <Button
-                    size="sm"
-                    onClick={() => navigate("/unlock")}
-                    className="!w-full !border-0 !m-0 bg-[#00394F] hover:bg-[#00394F]/90 text-white font-semibold py-2">
-                    Connect Wallet
-                  </Button>
-                ) : (
-                  <>
-                    {token.status.name === "Active" ? (
-                      <>
-                        <VoteUpModal proposalId={token.id} oneTokenAmount={tokenAmount} />
-                        <VoteDownModal proposalId={token.id} oneTokenAmount={tokenAmount} />
-                      </>
-                    ) : token.status.name === "Succeeded" ? (
-                      <div className="flex md:flex-row flex-col w-full justify-center gap-2 items-center">
-                        <Button
-                          variant="outline"
-                          className="md:w-3/6 w-full border-2 border-[#00394F]"
-                          onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
-                          type="button">
-                          Redeem
-                        </Button>
-                        <Button
-                          className="md:w-3/6 w-full bg-[#00394F] hover:bg-[#00394F]/90"
-                          type="button"
-                          onClick={() => executeProposal(BigNumber(token.id).toNumber())}>
-                          Execute
-                        </Button>
-                      </div>
-                    ) : token.status.name === "Defeated" || token.status.name === "Executed" ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          className="w-3/6 border-2 border-[#00394F]"
-                          type="button">
-                          Redeem
-                        </Button>
-                        <Button
-                          className="w-3/6 bg-[#00394F] hover:bg-[#00394F]/90"
-                          disabled
-                          type="button">
-                          Execute
-                        </Button>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                  </>
-                )}
+                <div className="flex gap-3 mt-auto justify-center">
+                  {!address ? (
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/unlock")}
+                      className="!w-full !border-0 !m-0 bg-[#00394F] hover:bg-[#00394F]/90 text-white font-semibold py-2">
+                      Connect Wallet
+                    </Button>
+                  ) : (
+                    <>
+                      {token.status.name === "Active" ? (
+                        <>
+                          <VoteUpModal proposalId={token.id} oneTokenAmount={tokenAmount} />
+                          <VoteDownModal proposalId={token.id} oneTokenAmount={tokenAmount} />
+                        </>
+                      ) : token.status.name === "Succeeded" ? (
+                        <div className="flex md:flex-row flex-col w-full justify-center gap-2 items-center">
+                          <Button
+                            variant="outline"
+                            className="md:w-3/6 w-full border-2 border-[#00394F]"
+                            onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
+                            type="button">
+                            Redeem
+                          </Button>
+                          <Button
+                            className="md:w-3/6 w-full bg-[#00394F] hover:bg-[#00394F]/90"
+                            type="button"
+                            onClick={() => executeProposal(BigNumber(token.id).toNumber())}>
+                            Execute
+                          </Button>
+                        </div>
+                      ) : token.status.name === "Defeated" || token.status.name === "Executed" ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="w-3/6 border-2 border-[#00394F]"
+                            type="button">
+                            Redeem
+                          </Button>
+                          <Button
+                            className="w-3/6 bg-[#00394F] hover:bg-[#00394F]/90"
+                            disabled
+                            type="button">
+                            Execute
+                          </Button>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
