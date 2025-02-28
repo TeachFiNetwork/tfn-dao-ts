@@ -227,7 +227,7 @@ export const AddProposalModal = () => {
       </DialogTrigger>
 
       <DialogContent
-        className="max-w-[40rem] bg-white"
+        className="max-w-[23rem] md:max-w-[40rem] bg-white p-4 md:p-6 max-h-[90vh] overflow-hidden flex flex-col"
         onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="p-3 border w-12 h-12 rounded-xl flex justify-center items-center shadow">
@@ -238,9 +238,11 @@ export const AddProposalModal = () => {
             Complete all fields in order to have a clear understanding of your DAO
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submitProposal)}>
-          <div className="flex flex-col">
-            <div className="flex flex-col w-full gap-2 pt-2">
+        <form
+          onSubmit={handleSubmit(submitProposal)}
+          className="space-y-6 overflow-y-auto pr-1 flex-1">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col w-full gap-2">
               <Label htmlFor="title" className="pl-1 text-gray-700">
                 Title
               </Label>
@@ -253,24 +255,24 @@ export const AddProposalModal = () => {
               />
               {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
             </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex flex-col w-full gap-2 pt-5">
+
+            <div className="flex flex-col w-full gap-2">
               <Label htmlFor="description" className="pl-1 text-gray-700">
                 Description
               </Label>
               <Textarea
                 id="description"
                 placeholder="What is your description?"
-                className="shadow"
+                className="shadow min-h-[100px]"
                 {...register("description")}
               />
               {errors.description && (
                 <p className="text-red-500 text-sm">{errors.description.message}</p>
               )}
             </div>
-            <div className="flex flex-row w-full gap-5 pt-2">
-              <div className="flex flex-col w-full gap-2 pt-2">
+
+            <div className="flex flex-row w-full gap-4">
+              <div className="flex flex-col w-full gap-2">
                 <Label htmlFor="tokenid" className="pl-1 text-gray-700">
                   Token
                 </Label>
@@ -300,7 +302,7 @@ export const AddProposalModal = () => {
                 />
                 {errors.token && <p className="text-red-500 text-sm">{errors.token.message}</p>}
               </div>
-              <div className="flex flex-col w-full gap-2 pt-2">
+              <div className="flex flex-col w-full gap-2">
                 <Label htmlFor="paymenttoken" className="pl-1 text-gray-700">
                   Payment token
                 </Label>
@@ -333,8 +335,9 @@ export const AddProposalModal = () => {
                 )}
               </div>
             </div>
-            <div className="flex flex-row w-full gap-5 pt-2">
-              <div className="flex flex-col w-full gap-2 pt-2">
+
+            <div className="flex flex-col md:flex-row w-full gap-4">
+              <div className="flex flex-col w-full gap-2">
                 <Label htmlFor="price" className="pl-1 text-gray-700">
                   Price
                 </Label>
@@ -342,14 +345,14 @@ export const AddProposalModal = () => {
                 {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
               </div>
               <div className="flex flex-row w-full gap-2 ">
-                <div className="flex flex-col w-full gap-2 pt-2">
+                <div className="flex flex-col w-full gap-2">
                   <Label htmlFor="minbuy" className="pl-1 text-gray-700">
                     Min Buy
                   </Label>
                   <Input type="number" id="minbuy" className="shadow" {...register("minBuy")} />
                   {errors.minBuy && <p className="text-red-500 text-sm">{errors.minBuy.message}</p>}
                 </div>
-                <div className="flex flex-col w-full gap-2 pt-2">
+                <div className="flex flex-col w-full gap-2">
                   <Label htmlFor="maxbuy" className="pl-1 text-gray-700">
                     Max buy
                   </Label>
@@ -377,19 +380,19 @@ export const AddProposalModal = () => {
               </div>
             </div>
             <div className="flex flex-row w-full items-center gap-5 pt-2">
-              <div className="flex flex-col w-full gap-2 pt-2">
+              <div className="flex flex-col w-full gap-2">
                 <p className="text-sm font-medium text-gray-700">Select start and end time</p>
-                <div className="flex gap-3">
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                   <Popover open={openStartDate} onOpenChange={setOpenStartDate}>
-                    <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex flex-col gap-1">
                       <PopoverTrigger asChild>
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-auto justify-start text-left font-light",
+                            "w-full md:w-auto justify-start text-left font-light",
                             !startDate && "text-muted-foreground"
                           )}>
-                          <CalendarIcon />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {startDate ? format(startDate, "PPP") : <span>Select start</span>}
                         </Button>
                       </PopoverTrigger>
@@ -397,7 +400,7 @@ export const AddProposalModal = () => {
                         <p className="text-red-500 text-sm">{errors.startDate.message}</p>
                       )}
                     </div>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
@@ -407,16 +410,17 @@ export const AddProposalModal = () => {
                       />
                     </PopoverContent>
                   </Popover>
+
                   <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
-                    <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex flex-col gap-1">
                       <PopoverTrigger asChild>
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-auto justify-start text-left font-light",
+                            "w-full md:w-auto justify-start text-left font-light",
                             !endDate && "text-muted-foreground"
                           )}>
-                          <CalendarIcon />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {endDate ? format(endDate, "PPP") : <span>Select end</span>}
                         </Button>
                       </PopoverTrigger>
@@ -424,7 +428,7 @@ export const AddProposalModal = () => {
                         <p className="text-red-500 text-sm">{errors.endDate.message}</p>
                       )}
                     </div>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
@@ -435,7 +439,8 @@ export const AddProposalModal = () => {
                       />
                     </PopoverContent>
                   </Popover>
-                  <div className="flex w-full items-center space-x-2 ">
+
+                  <div className="flex items-center space-x-2">
                     <Checkbox
                       id="kyc"
                       checked={watch("kycEnforced") === 1}
@@ -454,15 +459,19 @@ export const AddProposalModal = () => {
             </div>
           </div>
 
-          <DialogFooter className="w-full pt-8 flex items-center !justify-center">
+          <DialogFooter className="w-full pt-8 gap-1 md:gap-0 flex items-center !justify-center sticky bottom-0 bg-white mt-auto">
             <DialogPrimitive.Close asChild>
-              <Button variant="outline" className="w-3/6" type="button" onClick={() => reset()}>
+              <Button
+                variant="outline"
+                className="w-full md:w-3/6"
+                type="button"
+                onClick={() => reset()}>
                 Cancel
               </Button>
             </DialogPrimitive.Close>
             <Button
               variant="outline"
-              className="bg-[#00394F] hover:bg-[#00394F]/90 text-white hover:text-white w-2/4 rounded-lg"
+              className="bg-[#00394F] hover:bg-[#00394F]/90 text-white hover:text-white w-full md:w-3/6 rounded-lg"
               type="submit">
               Propose
             </Button>
