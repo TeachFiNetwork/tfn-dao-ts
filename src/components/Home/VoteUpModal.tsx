@@ -24,16 +24,26 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useEffect, useState } from "react";
 
-const validationSchema = z.object({
-  amount: z.string().min(1, "Amount is required"),
-});
-
 export const VoteUpModal = (props: any) => {
   const { address } = useGetAccountInfo();
   const { hasPendingTransactions } = useGetPendingTransactions();
   const { proposalId, oneTokenAmount } = props;
   const { callMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
+
+  const validationSchema = z.object({
+    amount: z
+      .string()
+      .min(1, "Amount is required")
+      .transform((val) => parseFloat(val))
+      .refine((val) => !isNaN(val) && val > 0, "Amount must be a valid number greater than 0")
+      .refine((val) => {
+        const maxAmount = BigNumber(oneTokenAmount)
+          .dividedBy(10 ** 18)
+          .toNumber();
+        return val <= maxAmount;
+      }, "Amount exceeds your available balance"),
+  });
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -147,6 +157,11 @@ export const VoteUpModal = (props: any) => {
             </DialogPrimitive.Close>
             <Button
               variant="outline"
+              disabled={
+                BigNumber(oneTokenAmount)
+                  .dividedBy(10 ** 18)
+                  .toNumber() < 1
+              }
               className="bg-[#00394F] hover:bg-[#00394F]/90 text-white hover:text-white w-2/4 rounded-lg"
               type="submit">
               Vote Up

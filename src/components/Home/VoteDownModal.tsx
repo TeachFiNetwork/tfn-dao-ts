@@ -8,6 +8,7 @@ import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-da
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
 import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "../ui/button";
@@ -22,12 +23,6 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { useEffect, useState } from "react";
-
-const validationSchema = z.object({
-  amount: z.string().min(1, "Amount is required"),
-});
 
 export const VoteDownModal = (props: any) => {
   const { address } = useGetAccountInfo();
@@ -35,6 +30,20 @@ export const VoteDownModal = (props: any) => {
   const { proposalId, oneTokenAmount } = props;
   const { callMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
+
+  const validationSchema = z.object({
+    amount: z
+      .string()
+      .min(1, "Amount is required")
+      .transform((val) => parseFloat(val))
+      .refine((val) => !isNaN(val) && val > 0, "Amount must be a valid number greater than 0")
+      .refine((val) => {
+        const maxAmount = BigNumber(oneTokenAmount)
+          .dividedBy(10 ** 18)
+          .toNumber();
+        return val <= maxAmount;
+      }, "Amount exceeds your available balance"),
+  });
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -147,6 +156,11 @@ export const VoteDownModal = (props: any) => {
             </DialogPrimitive.Close>
             <Button
               variant="outline"
+              disabled={
+                BigNumber(oneTokenAmount)
+                  .dividedBy(10 ** 18)
+                  .toNumber() < 1
+              }
               className="bg-[#D05229] text-white hover:text-white text-base hover:bg-[#D05229]/90 w-2/4 rounded-lg"
               type="submit">
               Down Vote

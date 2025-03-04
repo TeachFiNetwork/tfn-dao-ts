@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { formatSeconds } from "@/utils/functions";
 
-export const CountdownTimer = ({ startDate, endDate }: { startDate: number; endDate: number }) => {
+export const CountdownTimer = ({
+  startDate,
+  endDate,
+  setCountdownPassed,
+}: {
+  startDate: number;
+  endDate: number;
+  setCountdownPassed: Dispatch<SetStateAction<boolean>>;
+}) => {
   const [timeRemaining, setTimeRemaining] = useState(endDate - startDate);
   useEffect(() => {
     const totalDuration = endDate - startDate;
@@ -16,7 +24,9 @@ export const CountdownTimer = ({ startDate, endDate }: { startDate: number; endD
         return prevTime - 1;
       });
     }, 1000);
-
+    if (timeRemaining === 0) {
+      setCountdownPassed(true);
+    }
     return () => clearInterval(intervalId);
   }, [startDate, endDate]);
 

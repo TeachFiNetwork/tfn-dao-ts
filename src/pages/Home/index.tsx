@@ -20,6 +20,7 @@ import { U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";
+import { count } from "console";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,9 +30,10 @@ export function Home() {
   const { viewMethod, callMethod } = useInteraction();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState("Active");
+  const [activeTab, setActiveTab] = useState("viewAll");
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
   const [responseGate, setResponseGate] = useState<number>(0);
+  const [countdownPasses, setCountdownPassed] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const getResponseGate = async (token: string) => {
@@ -88,7 +90,11 @@ export function Home() {
       getWalletToken();
       getVotiongPeriod();
     }
-  }, [hasPendingTransactions]);
+    if (countdownPasses) {
+      getFranchise();
+      setCountdownPassed(false);
+    }
+  }, [hasPendingTransactions, countdownPasses]);
   console.log(proposals);
 
   const filteredProposals = useMemo(() => {
@@ -124,7 +130,7 @@ export function Home() {
       </div>
       <div className="h-32"></div>
       <div className="md:flex hidden flex-row  justify-between">
-        <Tabs defaultValue="active" className="w-[600px]" onValueChange={setActiveTab}>
+        <Tabs defaultValue="viewAll" className="w-[600px]" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="viewAll">View all</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
@@ -277,6 +283,7 @@ export function Home() {
                       <CountdownTimer
                         startDate={Math.floor(new Date().getTime() / 1000)}
                         endDate={BigNumber(token.creation_timestamp).plus(votingPeriod).toNumber()}
+                        setCountdownPassed={setCountdownPassed}
                       />
                     </p>
                   </span>
@@ -351,6 +358,7 @@ export function Home() {
                           <Button
                             variant="outline"
                             className="w-3/6 border-2 border-[#00394F]"
+                            onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
                             type="button">
                             Redeem
                           </Button>
