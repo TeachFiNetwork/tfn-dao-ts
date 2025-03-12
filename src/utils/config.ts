@@ -29,4 +29,4 @@ export const ElrondApiUrl = isDev
   ? "https://devnet-api.multiversx.com"
   : "https://multiversx-api.beaconx.app/public-mainnet-api";
 
-export const ONE = isDev ? "ONE-83a7c0" : "ONE-f9954f";
+export const GOUVERNANCE_TOKEN = isDev ? "LEARN-4d4960" : "ONE-f9954f";

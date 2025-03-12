@@ -69,7 +69,7 @@ const validationSchema = z
     }
   );
 
-export const AddProposalModal = () => {
+export const AddProposalModal = (props: any) => {
   const { address } = useGetAccount();
   const { hasPendingTransactions } = useGetPendingTransactions();
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -80,6 +80,9 @@ export const AddProposalModal = () => {
   const [launchpadAddress, setLaunchpadAddress] = useState<IAddress>(new Address(""));
   const { callMethod, viewMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const { votingPeriod } = props;
+  // const todayDate = new Date();
+  // console.log(BigNumber(votingPeriod).toNumber());
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -240,7 +243,7 @@ export const AddProposalModal = () => {
         </DialogHeader>
         <form
           onSubmit={handleSubmit(submitProposal)}
-          className="space-y-6 overflow-y-auto pr-1 flex-1">
+          className="space-y-6 overflow-y-auto flex-1 px-1">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col w-full gap-2">
               <Label htmlFor="title" className="pl-1 text-gray-700">
@@ -406,7 +409,9 @@ export const AddProposalModal = () => {
                         selected={startDate}
                         onSelect={handleStartDateSelect}
                         initialFocus
-                        disabled={{ before: new Date() }}
+                        disabled={{
+                          before: new Date(new Date().setDate(new Date().getDate() + 1)),
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -434,7 +439,15 @@ export const AddProposalModal = () => {
                         selected={endDate}
                         onSelect={handleEndDateSelect}
                         initialFocus
-                        disabled={{ before: startDate || new Date() }}
+                        disabled={{
+                          before:
+                            startDate ||
+                            new Date(
+                              new Date().setDate(
+                                new Date().getDate() + BigNumber(votingPeriod).plus(1).toNumber()
+                              )
+                            ),
+                        }}
                         fromDate={startDate || new Date()}
                       />
                     </PopoverContent>

@@ -1,5 +1,5 @@
 import { useInteraction } from "@/utils/Interaction";
-import { contracts, ONE } from "@/utils/config";
+import { contracts, GOUVERNANCE_TOKEN } from "@/utils/config";
 import { formatNumber } from "@/utils/functions";
 import { Vote } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -62,7 +62,7 @@ export const VoteDownModal = (props: any) => {
     reset,
   } = useForm<Vote>({
     defaultValues: {
-      token: ONE,
+      token: GOUVERNANCE_TOKEN,
       amount: 0,
     },
     mode: "onChange",
@@ -77,7 +77,7 @@ export const VoteDownModal = (props: any) => {
         args: [new U64Value(BigNumber(proposalId).toNumber())],
         fts: [
           {
-            token: ONE,
+            token: GOUVERNANCE_TOKEN,
             amount: Number(data.amount),
             decimals: 18,
           },
@@ -119,7 +119,7 @@ export const VoteDownModal = (props: any) => {
                 type="text"
                 id="token"
                 disabled
-                value={ONE}
+                value={GOUVERNANCE_TOKEN}
                 className="shadow"
                 {...register("token")}
               />
@@ -135,7 +135,7 @@ export const VoteDownModal = (props: any) => {
                       .toNumber(),
                     0
                   )}{" "}
-                  ONE
+                  {GOUVERNANCE_TOKEN.split("-")[0]}
                 </div>
               </Label>
               <Input

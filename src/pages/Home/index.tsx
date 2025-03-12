@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { contracts, ElrondGatewayUrl, ONE } from "@/utils/config";
+import { contracts, ElrondGatewayUrl, GOUVERNANCE_TOKEN } from "@/utils/config";
 import { bytesToBN, formatAddress, formatNumber, numberToBytes } from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
 import { Proposal } from "@/utils/types";
@@ -57,7 +57,7 @@ export function Home() {
   };
 
   const getWalletToken = () => {
-    const url = `${ElrondGatewayUrl}/address/${address}/esdt/${ONE}`;
+    const url = `${ElrondGatewayUrl}/address/${address}/esdt/${GOUVERNANCE_TOKEN}`;
     axios.get(url).then((res) => {
       setTokenAmount(res.data.data.tokenData.balance);
     });
@@ -140,7 +140,7 @@ export function Home() {
             <TabsTrigger value="executed">Executed</TabsTrigger>
           </TabsList>
         </Tabs>
-        <AddProposalModal />
+        <AddProposalModal votingPeriod={votingPeriod} />
       </div>
 
       <div className="flex md:hidden flex-col justify-between w-full gap-2">
@@ -177,6 +177,9 @@ export function Home() {
                       <h3 className="font-semibold text-[1.5rem] text-gray-900">
                         Proposal {BigNumber(token.id).toNumber() + 1}
                       </h3>
+                      <span className="text-gray-900/40 font-medium md:text-base text-sm">
+                        {Buffer.from(token.action.arguments[3]).toString()}
+                      </span>
                     </div>
                   </div>
                   <Badge
@@ -248,8 +251,9 @@ export function Home() {
                     <p className="text-stone-500 font-normal">
                       {BigNumber(bytesToBN(token.action.arguments[6]).toString())
                         .dividedBy(10 ** responseGate)
-                        .toNumber()}{" "}
-                      ONE
+                        .toNumber() +
+                        " " +
+                        Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}
                     </p>
                   </span>
                   <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
@@ -257,8 +261,9 @@ export function Home() {
                     <p className="text-stone-500 font-normal">
                       {BigNumber(bytesToBN(token.action.arguments[7]).toString())
                         .dividedBy(10 ** responseGate)
-                        .toNumber()}{" "}
-                      ONE
+                        .toNumber() +
+                        " " +
+                        Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}
                     </p>
                   </span>
                   <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
