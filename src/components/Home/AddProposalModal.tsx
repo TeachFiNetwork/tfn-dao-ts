@@ -250,7 +250,7 @@ export const AddProposalModal = (props: any) => {
       </DialogTrigger>
 
       <DialogContent
-        className="max-w-[23rem] md:max-w-[40rem] bg-white p-4 md:p-6 max-h-[90vh] overflow-y-scroll flex flex-col"
+        className="max-w-[23rem] md:max-w-[40rem] bg-white p-4 md:p-6 max-h-[90vh] md:overflow-visible overflow-hidden flex flex-col"
         onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="p-3 border w-12 h-12 rounded-xl flex justify-center items-center shadow">
@@ -425,7 +425,9 @@ export const AddProposalModal = (props: any) => {
                         <p className="text-red-500 text-sm">{errors.startDate.message}</p>
                       )}
                     </div>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent
+                      className="w-auto p-0 relative bg-white !z-[9999]"
+                      align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
