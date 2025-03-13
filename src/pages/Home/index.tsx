@@ -157,7 +157,7 @@ export function Home() {
             <SelectItem value="executed">Executed</SelectItem>
           </SelectContent>
         </Select>
-        <AddProposalModal />
+        <AddProposalModal votingPeriod={votingPeriod} />
       </div>
       <div className="flex justify-center items-center py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">

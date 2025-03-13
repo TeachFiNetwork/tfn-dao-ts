@@ -50,9 +50,9 @@ const validationSchema = z
     description: z.string().min(1, "Description is required"),
     token: z.string().min(1, "Token is required"),
     paymentToken: z.string().min(1, "Payment token is required"),
-    price: z.string().min(1, "Price is required"),
-    minBuy: z.string().min(1, "Min buy is required"),
-    maxBuy: z.string().min(1, "Max buy is required"),
+    price: z.string().refine((val) => parseFloat(val) > 0, "Price must be greater than 0"),
+    minBuy: z.string().refine((val) => parseFloat(val) > 0, "Min buy must be greater than 0"),
+    maxBuy: z.string().refine((val) => parseFloat(val) > 0, "Max buy is required"),
     startDate: z.number().min(1, "Start date is required"),
     endDate: z.number().min(1, "End date is required"),
     kycEnforced: z.number(),
@@ -61,11 +61,20 @@ const validationSchema = z
     (data) => {
       const minBuy = parseFloat(data.minBuy);
       const maxBuy = parseFloat(data.maxBuy);
-      return minBuy < maxBuy;
+      return maxBuy >= minBuy + 1;
     },
     {
-      message: "Min buy must be lower than max buy",
-      path: ["minBuy"], // Shows the error on the minBuy field
+      message: "Max buy must be at least 1 higher than min buy",
+      path: ["maxBuy"],
+    }
+  )
+  .refine(
+    (data) => {
+      return data.endDate > data.startDate;
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
     }
   );
 
@@ -131,13 +140,14 @@ export const AddProposalModal = (props: any) => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
     setValue,
     setError,
     reset,
     getValues,
     clearErrors,
     watch,
+    trigger,
   } = useForm<Launchpad>({
     defaultValues: {
       title: "",
@@ -164,6 +174,15 @@ export const AddProposalModal = (props: any) => {
   };
 
   const handleEndDateSelect = (selectedDate: Date | undefined) => {
+    if (!startDate) {
+      setError("endDate", {
+        type: "manual",
+        message: "Please select start date first",
+      });
+      return;
+    }
+
+    clearErrors("endDate");
     setEndDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
     setValue("endDate", date ?? 0);
@@ -210,7 +229,8 @@ export const AddProposalModal = (props: any) => {
     });
     reset();
   };
-
+  const date = new Date();
+  console.log(BigNumber(votingPeriod).toNumber());
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
       <DialogTrigger asChild>
@@ -230,7 +250,7 @@ export const AddProposalModal = (props: any) => {
       </DialogTrigger>
 
       <DialogContent
-        className="max-w-[23rem] md:max-w-[40rem] bg-white p-4 md:p-6 max-h-[90vh] overflow-hidden flex flex-col"
+        className="max-w-[23rem] md:max-w-[40rem] bg-white p-4 md:p-6 max-h-[90vh] overflow-y-scroll flex flex-col"
         onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="p-3 border w-12 h-12 rounded-xl flex justify-center items-center shadow">
@@ -293,6 +313,7 @@ export const AddProposalModal = (props: any) => {
                           });
                         } else {
                           await getResponseGate(event.target.value);
+                          await trigger();
                         }
                       } catch (error) {
                         setError("token", {
@@ -323,6 +344,7 @@ export const AddProposalModal = (props: any) => {
                           });
                         } else {
                           await getResponseGate(event.target.value);
+                          await trigger();
                         }
                       } catch (error) {
                         setError("paymentToken", {
@@ -408,9 +430,15 @@ export const AddProposalModal = (props: any) => {
                         mode="single"
                         selected={startDate}
                         onSelect={handleStartDateSelect}
-                        initialFocus
+                        onDayClick={() => setOpenStartDate(false)}
+                        today={new Date()}
                         disabled={{
-                          before: new Date(new Date().setDate(new Date().getDate() + 1)),
+                          before: new Date(
+                            new Date().setTime(
+                              new Date().getTime() +
+                                BigNumber(votingPeriod).multipliedBy(1000).plus(86400000).toNumber()
+                            )
+                          ),
                         }}
                       />
                     </PopoverContent>
@@ -438,17 +466,19 @@ export const AddProposalModal = (props: any) => {
                         mode="single"
                         selected={endDate}
                         onSelect={handleEndDateSelect}
-                        initialFocus
                         disabled={{
-                          before:
-                            startDate ||
-                            new Date(
-                              new Date().setDate(
-                                new Date().getDate() + BigNumber(votingPeriod).plus(1).toNumber()
-                              )
-                            ),
+                          before: startDate
+                            ? new Date(startDate.getTime() + 86400 * 1000)
+                            : new Date(
+                                new Date().setTime(
+                                  new Date().getTime() +
+                                    BigNumber(votingPeriod)
+                                      .multipliedBy(1000)
+                                      .plus(86400000 * 2)
+                                      .toNumber()
+                                )
+                              ),
                         }}
-                        fromDate={startDate || new Date()}
                       />
                     </PopoverContent>
                   </Popover>
@@ -484,6 +514,7 @@ export const AddProposalModal = (props: any) => {
             </DialogPrimitive.Close>
             <Button
               variant="outline"
+              disabled={!isValid || Object.keys(errors).length > 0}
               className="bg-[#00394F] hover:bg-[#00394F]/90 text-white hover:text-white w-full md:w-3/6 rounded-lg"
               type="submit">
               Propose
