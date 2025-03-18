@@ -20,7 +20,6 @@ import { U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import { count } from "console";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -34,23 +33,31 @@ export function Home() {
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
   const [responseGate, setResponseGate] = useState<number>(0);
   const [countdownPasses, setCountdownPassed] = useState<boolean>(false);
+  const [decimalsMap, setDecimalsMap] = useState(new Map<string, number>());
   const navigate = useNavigate();
+  console.log(proposals);
 
   const getResponseGate = async (token: string) => {
+    if (decimalsMap.has(token)) {
+      return;
+    }
     try {
       const test = Buffer.from(token).toString("hex");
+
       const url = `${ElrondGatewayUrl}/vm-values/query`;
       const response = await axios.post(url, {
         "scAddress": "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u",
         "funcName": "getTokenProperties",
         "args": [test],
       });
+
       if (!response.data?.data?.data?.returnData[5]) {
         throw new Error("invalid token");
       }
       const data1 = await JSON.stringify(response.data.data.data.returnData[5]);
-      // console.log(Buffer.from(data1, "base64").toString().split("-")[1]);
-      setResponseGate(Number(Buffer.from(data1, "base64").toString().split("-")[1]));
+      // console.log(Buffer.from(data1, "base64").toString());
+      const decimals = Number(Buffer.from(data1, "base64").toString().split("-")[1]);
+      setDecimalsMap((prev) => new Map(prev).set(token, decimals));
     } catch (e) {
       throw e;
     }
@@ -95,7 +102,25 @@ export function Home() {
       setCountdownPassed(false);
     }
   }, [hasPendingTransactions, countdownPasses]);
-  console.log(proposals);
+
+  useEffect(() => {
+    const fetchTokenInfo = async () => {
+      for (const item of proposals) {
+        if (
+          Buffer.from(item.action.arguments[3]).toString() === "c" ||
+          Buffer.from(item.action.arguments[4]).toString() === "d"
+        ) {
+          continue;
+        }
+        await getResponseGate(Buffer.from(item.action.arguments[4]).toString());
+        await getResponseGate(Buffer.from(item.action.arguments[3]).toString());
+      }
+    };
+
+    if (proposals.length > 0) {
+      fetchTokenInfo();
+    }
+  }, [proposals]);
 
   const filteredProposals = useMemo(() => {
     if (activeTab === "viewAll") return proposals;
@@ -140,7 +165,7 @@ export function Home() {
             <TabsTrigger value="executed">Executed</TabsTrigger>
           </TabsList>
         </Tabs>
-        <AddProposalModal votingPeriod={votingPeriod} />
+        <AddProposalModal votingPeriod={votingPeriod} decimalsMap={decimalsMap} />
       </div>
 
       <div className="flex md:hidden flex-col justify-between w-full gap-2">
@@ -164,8 +189,7 @@ export function Home() {
           {filteredProposals.map((token) => {
             // console.log(Buffer.from(token.action.arguments[4]).toString());
 
-            getResponseGate(Buffer.from(token.action.arguments[4]).toString());
-            // console.log(responseGate);
+            // getResponseGate(Buffer.from(token.action.arguments[4]).toString());
 
             return (
               <div
@@ -240,7 +264,11 @@ export function Home() {
                     Price
                     <p className="text-stone-500 font-normal">
                       {BigNumber(bytesToBN(token.action.arguments[5]).toString())
-                        .dividedBy(10 ** responseGate)
+                        .dividedBy(
+                          10 **
+                            (decimalsMap.get(Buffer.from(token.action.arguments[4]).toString()) ||
+                              0)
+                        )
                         .toNumber() +
                         " " +
                         Buffer.from(token.action.arguments[4]).toString().split("-")[0]}{" "}
@@ -250,7 +278,11 @@ export function Home() {
                     Min Buy
                     <p className="text-stone-500 font-normal">
                       {BigNumber(bytesToBN(token.action.arguments[6]).toString())
-                        .dividedBy(10 ** responseGate)
+                        .dividedBy(
+                          10 **
+                            (decimalsMap.get(Buffer.from(token.action.arguments[3]).toString()) ||
+                              18)
+                        )
                         .toNumber() +
                         " " +
                         Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}
@@ -260,7 +292,11 @@ export function Home() {
                     Max Buy
                     <p className="text-stone-500 font-normal">
                       {BigNumber(bytesToBN(token.action.arguments[7]).toString())
-                        .dividedBy(10 ** responseGate)
+                        .dividedBy(
+                          10 **
+                            (decimalsMap.get(Buffer.from(token.action.arguments[3]).toString()) ||
+                              18)
+                        )
                         .toNumber() +
                         " " +
                         Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}

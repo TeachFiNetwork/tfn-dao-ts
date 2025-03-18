@@ -85,11 +85,13 @@ export const AddProposalModal = (props: any) => {
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [openStartDate, setOpenStartDate] = useState(false);
   const [openEndDate, setOpenEndDate] = useState(false);
-  const [responseGate, setResponseGate] = useState<number>(0);
   const [launchpadAddress, setLaunchpadAddress] = useState<IAddress>(new Address(""));
   const { callMethod, viewMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
-  const { votingPeriod } = props;
+  const [responseGate, setResponseGate] = useState(new Map<string, number>());
+
+  const { votingPeriod, decimalsMap } = props;
+
   // const todayDate = new Date();
   // console.log(BigNumber(votingPeriod).toNumber());
 
@@ -130,8 +132,8 @@ export const AddProposalModal = (props: any) => {
         throw new Error("invalid token");
       }
       const data1 = await JSON.stringify(response.data.data.data.returnData[5]);
-      console.log(Buffer.from(data1, "base64").toString().split("-")[1]);
-      setResponseGate(Number(Buffer.from(data1, "base64").toString().split("-")[1]));
+      const decimals = Number(Buffer.from(data1, "base64").toString().split("-")[1]);
+      setResponseGate((prev) => new Map(prev).set(token, decimals));
     } catch (e) {
       throw e;
     }
@@ -168,8 +170,7 @@ export const AddProposalModal = (props: any) => {
     setStartDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
     setValue("startDate", date ?? 0);
-    // console.log(selectedDate?.toISOString());
-
+    clearErrors("startDate"); // Add this line to clear the error
     setOpenStartDate(false); // Close the popover after selection
   };
 
@@ -191,6 +192,19 @@ export const AddProposalModal = (props: any) => {
 
   const submitProposal = async (formData: Launchpad) => {
     console.log(formData);
+
+    const paymentTokenDecimals = responseGate.get(formData.paymentToken);
+    const tokenDecimals = responseGate.get(formData.token);
+
+    if (!paymentTokenDecimals || !tokenDecimals) {
+      // Handle missing token information
+      setError("token", {
+        type: "manual",
+        message: "Token information is incomplete. Please check both tokens.",
+      });
+      return;
+    }
+
     const proposalCreationType = TeachFiDao.getStruct("ProposalCreationArgs");
     const proposalActionType = TeachFiDao.getStruct("Action");
 
@@ -200,9 +214,9 @@ export const AddProposalModal = (props: any) => {
       new BytesValue(Buffer.from(formData.title)),
       new BytesValue(Buffer.from(formData.token)),
       new BytesValue(Buffer.from(formData.paymentToken)),
-      new BytesValue(BNtoBytes(BigNumber(formData.price).multipliedBy(10 ** responseGate))),
-      new BytesValue(BNtoBytes(BigNumber(formData.minBuy).multipliedBy(10 ** responseGate))),
-      new BytesValue(BNtoBytes(BigNumber(formData.maxBuy).multipliedBy(10 ** responseGate))),
+      new BytesValue(BNtoBytes(BigNumber(formData.price).multipliedBy(10 ** paymentTokenDecimals))),
+      new BytesValue(BNtoBytes(BigNumber(formData.minBuy).multipliedBy(10 ** tokenDecimals))),
+      new BytesValue(BNtoBytes(BigNumber(formData.maxBuy).multipliedBy(10 ** tokenDecimals))),
       new BytesValue(BNtoBytes(BigNumber(formData.startDate))),
       new BytesValue(BNtoBytes(BigNumber(formData.endDate))),
     ]);
@@ -229,8 +243,7 @@ export const AddProposalModal = (props: any) => {
     });
     reset();
   };
-  const date = new Date();
-  console.log(BigNumber(votingPeriod).toNumber());
+
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
       <DialogTrigger asChild>
@@ -432,8 +445,6 @@ export const AddProposalModal = (props: any) => {
                         mode="single"
                         selected={startDate}
                         onSelect={handleStartDateSelect}
-                        onDayClick={() => setOpenStartDate(false)}
-                        today={new Date()}
                         disabled={{
                           before: new Date(
                             new Date().setTime(
