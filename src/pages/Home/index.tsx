@@ -150,7 +150,8 @@ export function Home() {
       <div className="flex flex-col gap-6">
         <h1 className="text-5xl font-semibold">DAO Proposals</h1>
         <h4 className="text-xl font-normal text-zinc-500">
-          The latest industry news, interviews, technologies, and resources.
+          Empowering our community to shape the future of financial education through innovative,
+          decentralized governance.
         </h4>
       </div>
       <div className="h-32"></div>
