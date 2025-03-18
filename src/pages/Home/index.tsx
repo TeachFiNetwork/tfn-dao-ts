@@ -146,7 +146,7 @@ export function Home() {
   };
 
   return (
-    <div className="flex flex-col w-full pt-40 md:px-20 px-5">
+    <div className="flex flex-col w-full pt-40 md:px-10 px-5">
       <div className="flex flex-col gap-6">
         <h1 className="text-5xl font-semibold">DAO Proposals</h1>
         <h4 className="text-xl font-normal text-zinc-500">
@@ -248,7 +248,7 @@ export function Home() {
                   <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
                     Proposer
                     <p className="text-stone-500 font-normal">
-                      {formatAddress(token.proposer.bech32())}{" "}
+                      {formatAddress(token.proposer.bech32(), 6)}{" "}
                     </p>
                   </span>
                   <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
