@@ -61,11 +61,11 @@ const validationSchema = z
     (data) => {
       const minBuy = parseFloat(data.minBuy);
       const maxBuy = parseFloat(data.maxBuy);
-      return maxBuy >= minBuy + 1;
+      return maxBuy > minBuy;
     },
     {
-      message: "Max buy must be at least 1 higher than min buy",
-      path: ["maxBuy"],
+      message: "Min buy must be at least 1 lower than max buy",
+      path: ["minBuy"],
     }
   )
   .refine(
@@ -166,6 +166,13 @@ export const AddProposalModal = (props: any) => {
     mode: "onChange",
     resolver: zodResolver(validationSchema),
   });
+
+  // useEffect(() => {
+  //   if (responseGate.size > 0) {
+  //     trigger();
+  //   }
+  // }, [responseGate, trigger]);
+
   const handleStartDateSelect = (selectedDate: Date | undefined) => {
     setStartDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
@@ -177,7 +184,7 @@ export const AddProposalModal = (props: any) => {
   const handleEndDateSelect = (selectedDate: Date | undefined) => {
     if (!startDate) {
       setError("endDate", {
-        type: "manual",
+        type: "onChange",
         message: "Please select start date first",
       });
       return;
@@ -187,6 +194,7 @@ export const AddProposalModal = (props: any) => {
     setEndDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
     setValue("endDate", date ?? 0);
+    trigger();
     setOpenEndDate(false); // Close the popover after selection
   };
 
@@ -199,7 +207,7 @@ export const AddProposalModal = (props: any) => {
     if (!paymentTokenDecimals || !tokenDecimals) {
       // Handle missing token information
       setError("token", {
-        type: "manual",
+        type: "onChange",
         message: "Token information is incomplete. Please check both tokens.",
       });
       return;
@@ -271,7 +279,7 @@ export const AddProposalModal = (props: any) => {
           </div>
           <DialogTitle className="pt-6">Propose new Launchpad</DialogTitle>
           <DialogDescription>
-            Complete all fields in order to have a clear understanding of your DAO
+            Complete all fields in order to have a clear understanding of your Proposal
           </DialogDescription>
         </DialogHeader>
         <form
@@ -326,7 +334,8 @@ export const AddProposalModal = (props: any) => {
                           });
                         } else {
                           await getResponseGate(event.target.value);
-                          await trigger();
+                          clearErrors("token");
+                          await trigger("token", { shouldFocus: true });
                         }
                       } catch (error) {
                         setError("token", {
@@ -357,7 +366,8 @@ export const AddProposalModal = (props: any) => {
                           });
                         } else {
                           await getResponseGate(event.target.value);
-                          await trigger();
+                          // clearErrors("token");
+                          await trigger("paymentToken", { shouldFocus: true });
                         }
                       } catch (error) {
                         setError("paymentToken", {
