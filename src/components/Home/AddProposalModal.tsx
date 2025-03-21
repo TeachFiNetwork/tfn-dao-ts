@@ -176,7 +176,18 @@ export const AddProposalModal = (props: any) => {
   const handleStartDateSelect = (selectedDate: Date | undefined) => {
     setStartDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
-    setValue("startDate", date ?? 0);
+    if (selectedDate) {
+      // Convert to UTC
+      const utcDate = new Date(Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        0, 0, 0
+      ));
+      setValue("startDate", utcDate.getTime() / 1000);
+    } else {
+      setValue("startDate", date ?? 0);
+    }
     clearErrors("startDate"); // Add this line to clear the error
     setOpenStartDate(false); // Close the popover after selection
   };
@@ -193,14 +204,23 @@ export const AddProposalModal = (props: any) => {
     clearErrors("endDate");
     setEndDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
-    setValue("endDate", date ?? 0);
+    if (selectedDate) {
+      // Convert to UTC
+      const utcDate = new Date(Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        0, 0, 0
+      ));
+      setValue("endDate", utcDate.getTime() / 1000);
+    } else {
+      setValue("endDate", date ?? 0);
+    }
     trigger();
     setOpenEndDate(false); // Close the popover after selection
   };
 
   const submitProposal = async (formData: Launchpad) => {
-    console.log(formData);
-
     const paymentTokenDecimals = responseGate.get(formData.paymentToken);
     const tokenDecimals = responseGate.get(formData.token);
 
@@ -491,7 +511,7 @@ export const AddProposalModal = (props: any) => {
                         onSelect={handleEndDateSelect}
                         disabled={{
                           before: startDate
-                            ? new Date(startDate.getTime() + 86400 * 1000)
+                            ? new Date(startDate.getTime() + 86400000)
                             : new Date(
                                 new Date().setTime(
                                   new Date().getTime() +
