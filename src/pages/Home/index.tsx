@@ -61,7 +61,6 @@ export function Home() {
         throw new Error("invalid token");
       }
       const data1 = await JSON.stringify(response.data.data.data.returnData[5]);
-      // console.log(Buffer.from(data1, "base64").toString());
       const decimals = Number(Buffer.from(data1, "base64").toString().split("-")[1]);
       setDecimalsMap((prev) => new Map(prev).set(token, decimals));
     } catch (e) {
@@ -129,6 +128,17 @@ export function Home() {
 
   useEffect(() => {
     getFranchise();
+    const getProposals = async () => {
+      const proposals = await viewMethod({
+        contract: contracts.DAO,
+        method: "getProposals",
+        args: [new U64Value(0), new U64Value(20)],
+      }).catch((err) => {
+        console.log(err);
+      });
+      setProposals(proposals);
+    };
+    getProposals();
     if (address) {
       const fetchTokenBalance = async () => {
         const tokenTotal = await getWalletToken(address, GOUVERNANCE_TOKEN);
@@ -138,7 +148,7 @@ export function Home() {
       getVotiongPeriod();
     }
     if (countdownPasses) {
-      getFranchise();
+      getProposals();
       setCountdownPassed(false);
     }
   }, [hasPendingTransactions, countdownPasses]);
@@ -215,10 +225,6 @@ export function Home() {
       <div className="flex justify-center items-center py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {filteredProposals.map((token) => {
-            // console.log(Buffer.from(token.action.arguments[4]).toString());
-
-            // getResponseGate(Buffer.from(token.action.arguments[4]).toString());
-
             return (
               <div
                 key={BigNumber(token.id).toNumber()}
@@ -381,7 +387,6 @@ export function Home() {
                             (BigNumber(token.num_downvotes).toNumber() +
                               BigNumber(token.num_upvotes).toNumber())) *
                           100;
-                        // console.log(BigNumber(token.u).toNumber());
                         return isNaN(percentage)
                           ? "0"
                           : formatNumber(BigNumber(percentage).toNumber(), 2);
