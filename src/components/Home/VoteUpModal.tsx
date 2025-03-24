@@ -53,6 +53,11 @@ export const VoteUpModal = (props: any) => {
     setShowModal(false);
   };
 
+  const fetchTokenBalance = async (address: string, token: string) => {
+    const tokenTotal = await getWalletToken(address, token);
+    setTokenAmount(tokenTotal);
+  };
+
   useEffect(() => {
     if (hasPendingTransactions) {
       handleCloseModal();
@@ -74,11 +79,6 @@ export const VoteUpModal = (props: any) => {
     mode: "onChange",
     resolver: zodResolver(validationSchema),
   });
-
-  const fetchTokenBalance = async (address: string, token: string) => {
-    const tokenTotal = await getWalletToken(address, token);
-    setTokenAmount(tokenTotal);
-  };
 
   const submitUpvote = async (data: Vote) => {
     if (data.amount > 0) {
