@@ -23,15 +23,18 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export const VoteDownModal = (props: any) => {
   const { address } = useGetAccountInfo();
   const { hasPendingTransactions } = useGetPendingTransactions();
-  const { proposalId, oneTokenAmount } = props;
+  const { proposalId, oneTokenAmount, votingTokens } = props;
   const { callMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [selectedToken, setSelectedToken] = useState(GOUVERNANCE_TOKEN);
 
   const validationSchema = z.object({
+    token: z.string().min(1, "Token is required"),
     amount: z
       .string()
       .min(1, "Amount is required")
@@ -58,6 +61,7 @@ export const VoteDownModal = (props: any) => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<Vote>({
@@ -77,7 +81,7 @@ export const VoteDownModal = (props: any) => {
         args: [new U64Value(BigNumber(proposalId).toNumber())],
         fts: [
           {
-            token: GOUVERNANCE_TOKEN,
+            token: data.token,
             amount: Number(data.amount),
             decimals: 18,
           },
@@ -86,6 +90,7 @@ export const VoteDownModal = (props: any) => {
       reset();
     }
   };
+
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
       <DialogTrigger className="flex-1" asChild disabled={!address}>
@@ -108,6 +113,9 @@ export const VoteDownModal = (props: any) => {
           <DialogDescription>
             Vote down for proposal {BigNumber(proposalId).toNumber() + 1}
           </DialogDescription>
+          <DialogDescription className="text-cyan-500">
+            *By voting with SLEARN you will have a higher impact in the vote
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submitDownvote)}>
           <div className="flex gap-2">
@@ -115,14 +123,34 @@ export const VoteDownModal = (props: any) => {
               <Label htmlFor="token" className="pl-1 text-gray-700">
                 Token
               </Label>
-              <Input
+              <Select
+                defaultValue={selectedToken}
+                onValueChange={(value) => {
+                  setSelectedToken(value);
+                  setValue("token", value);
+                }}>
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedToken} />
+                </SelectTrigger>
+                <SelectContent className="cursor-pointer">
+                  {votingTokens &&
+                    votingTokens.map((token: any) => {
+                      return (
+                        <SelectItem value={token[0]} key={token[0]}>
+                          {token[0]}
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select>
+              {/* <Input
                 type="text"
                 id="token"
                 disabled
                 value={GOUVERNANCE_TOKEN}
                 className="shadow"
                 {...register("token")}
-              />
+              /> */}
             </div>
             <div className="flex flex-col w-full gap-2 pt-2">
               <Label htmlFor="amount" className="flex justify-between pl-1 text-gray-700">

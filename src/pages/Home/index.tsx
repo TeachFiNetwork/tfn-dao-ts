@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { contracts, ElrondGatewayUrl, GOUVERNANCE_TOKEN } from "@/utils/config";
-import { bytesToBN, formatAddress, formatNumber, numberToBytes } from "@/utils/functions";
+import {
+  bytesToBN,
+  formatAddress,
+  formatNumber,
+  getWalletToken,
+  numberToBytes,
+} from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
 import { Proposal } from "@/utils/types";
 import { U64Value } from "@multiversx/sdk-core/out";
@@ -31,11 +37,11 @@ export function Home() {
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("viewAll");
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
-  const [responseGate, setResponseGate] = useState<number>(0);
   const [countdownPasses, setCountdownPassed] = useState<boolean>(false);
   const [decimalsMap, setDecimalsMap] = useState(new Map<string, number>());
+  const [votingTokens, setVotingTokens] = useState<string[]>([]);
   const navigate = useNavigate();
-  console.log(proposals);
+  // console.log(proposals);
 
   const getResponseGate = async (token: string) => {
     if (decimalsMap.has(token)) {
@@ -63,12 +69,12 @@ export function Home() {
     }
   };
 
-  const getWalletToken = () => {
-    const url = `${ElrondGatewayUrl}/address/${address}/esdt/${GOUVERNANCE_TOKEN}`;
-    axios.get(url).then((res) => {
-      setTokenAmount(res.data.data.tokenData.balance);
-    });
-  };
+  // const getWalletToken = () => {
+  //   const url = `${ElrondGatewayUrl}/address/${address}/esdt/${GOUVERNANCE_TOKEN}`;
+  //   axios.get(url).then((res) => {
+  //     setTokenAmount(res.data.data.tokenData.balance);
+  //   });
+  // };
 
   const getVotiongPeriod = async () => {
     const period = await viewMethod({
@@ -81,20 +87,54 @@ export function Home() {
     setVotingPeriod(period);
   };
 
+  const getVotiongTokens = async () => {
+    const tokens = await viewMethod({
+      contract: contracts.DAO,
+      method: "getVotingTokens",
+      args: [],
+    }).catch((err) => {
+      console.log(err);
+    });
+    setVotingTokens(tokens);
+  };
+
+  const getFranchise = async () => {
+    const franchise = await viewMethod({
+      contract: contracts.DAO,
+      method: "getProposals",
+      args: [new U64Value(0), new U64Value(20)],
+    }).catch((err) => {
+      console.log(err);
+    });
+    // console.log(franchise);
+
+    setProposals(franchise);
+  };
+
+  const redeemTokens = async (proposalId: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "redeem",
+      args: [new U64Value(proposalId)],
+    });
+  };
+
+  const executeProposal = async (proposalId: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "execute",
+      args: [new U64Value(proposalId)],
+    });
+  };
+
   useEffect(() => {
-    const getFranchise = async () => {
-      const franchise = await viewMethod({
-        contract: contracts.DAO,
-        method: "getProposals",
-        args: [new U64Value(0), new U64Value(20)],
-      }).catch((err) => {
-        console.log(err);
-      });
-      setProposals(franchise);
-    };
     getFranchise();
     if (address) {
-      getWalletToken();
+      const fetchTokenBalance = async () => {
+        const tokenTotal = await getWalletToken(address, GOUVERNANCE_TOKEN);
+        setTokenAmount(tokenTotal);
+      };
+      fetchTokenBalance();
       getVotiongPeriod();
     }
     if (countdownPasses) {
@@ -119,6 +159,8 @@ export function Home() {
 
     if (proposals.length > 0) {
       fetchTokenInfo();
+
+      getVotiongTokens();
     }
   }, [proposals]);
 
@@ -128,22 +170,7 @@ export function Home() {
       (proposal) => proposal.status.name.toLowerCase() === activeTab.toLowerCase()
     );
   }, [proposals, activeTab]);
-
-  const redeemTokens = async (proposalId: number) => {
-    await callMethod({
-      contract: contracts.DAO,
-      method: "redeem",
-      args: [new U64Value(proposalId)],
-    });
-  };
-
-  const executeProposal = async (proposalId: number) => {
-    await callMethod({
-      contract: contracts.DAO,
-      method: "execute",
-      args: [new U64Value(proposalId)],
-    });
-  };
+  // console.log(filteredProposals);
 
   return (
     <div className="flex flex-col w-full pt-40 md:px-10 px-5">
@@ -376,8 +403,16 @@ export function Home() {
                     <>
                       {token.status.name === "Active" ? (
                         <>
-                          <VoteUpModal proposalId={token.id} oneTokenAmount={tokenAmount} />
-                          <VoteDownModal proposalId={token.id} oneTokenAmount={tokenAmount} />
+                          <VoteUpModal
+                            proposalId={token.id}
+                            oneTokenAmount={tokenAmount}
+                            votingTokens={votingTokens}
+                          />
+                          <VoteDownModal
+                            proposalId={token.id}
+                            oneTokenAmount={tokenAmount}
+                            votingTokens={votingTokens}
+                          />
                         </>
                       ) : token.status.name === "Succeeded" ? (
                         <div className="flex md:flex-row flex-col w-full justify-center gap-2 items-center">

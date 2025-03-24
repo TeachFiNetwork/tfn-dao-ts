@@ -16,6 +16,8 @@ export enum MVX_ENV_ENUM {
 
 export const dAppName = "Mvx Template";
 
+export const defaultGouvernanceToken = import.meta.env.VITE_ENV_GOUVERNANCE_TOKEN;
+
 export const defaultUrl = (chainId: string) => {
   return chainId === "1" ? "api.multiversx.com" : "devnet-api.multiversx.com";
 };

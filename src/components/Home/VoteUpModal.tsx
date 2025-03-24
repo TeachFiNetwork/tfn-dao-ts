@@ -1,6 +1,6 @@
 import { useInteraction } from "@/utils/Interaction";
 import { contracts, GOUVERNANCE_TOKEN } from "@/utils/config";
-import { formatNumber } from "@/utils/functions";
+import { formatNumber, getWalletToken } from "@/utils/functions";
 import { Vote } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { U64Value } from "@multiversx/sdk-core/out";
@@ -23,15 +23,19 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useEffect, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export const VoteUpModal = (props: any) => {
   const { address } = useGetAccountInfo();
   const { hasPendingTransactions } = useGetPendingTransactions();
-  const { proposalId, oneTokenAmount } = props;
+  const { proposalId, oneTokenAmount, votingTokens } = props;
   const { callMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [selectedToken, setSelectedToken] = useState(GOUVERNANCE_TOKEN);
+  const [tokenAmount, setTokenAmount] = useState<number>(0);
 
   const validationSchema = z.object({
+    token: z.string().min(1, "Token is required"),
     amount: z
       .string()
       .min(1, "Amount is required")
@@ -53,11 +57,13 @@ export const VoteUpModal = (props: any) => {
     if (hasPendingTransactions) {
       handleCloseModal();
     }
+    fetchTokenBalance(address, selectedToken);
   }, [hasPendingTransactions]);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<Vote>({
@@ -69,6 +75,11 @@ export const VoteUpModal = (props: any) => {
     resolver: zodResolver(validationSchema),
   });
 
+  const fetchTokenBalance = async (address: string, token: string) => {
+    const tokenTotal = await getWalletToken(address, token);
+    setTokenAmount(tokenTotal);
+  };
+
   const submitUpvote = async (data: Vote) => {
     if (data.amount > 0) {
       await callMethod({
@@ -77,7 +88,7 @@ export const VoteUpModal = (props: any) => {
         args: [new U64Value(BigNumber(proposalId).toNumber())],
         fts: [
           {
-            token: GOUVERNANCE_TOKEN,
+            token: data.token,
             amount: Number(data.amount),
             decimals: 18,
           },
@@ -109,6 +120,9 @@ export const VoteUpModal = (props: any) => {
           <DialogDescription>
             Vote up for proposal {BigNumber(proposalId).toNumber() + 1}
           </DialogDescription>
+          <DialogDescription className="text-cyan-500">
+            *By voting with SLEARN you will have a higher impact in the vote
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submitUpvote)}>
           <div className="flex gap-2">
@@ -116,14 +130,27 @@ export const VoteUpModal = (props: any) => {
               <Label htmlFor="token" className="pl-1 text-gray-700">
                 Token
               </Label>
-              <Input
-                type="text"
-                id="token"
-                disabled
-                value={GOUVERNANCE_TOKEN}
-                className="shadow"
-                {...register("token")}
-              />
+              <Select
+                defaultValue={selectedToken}
+                onValueChange={(value) => {
+                  setSelectedToken(value);
+                  setValue("token", value);
+                  fetchTokenBalance(address, value);
+                }}>
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedToken} />
+                </SelectTrigger>
+                <SelectContent className="cursor-pointer">
+                  {votingTokens &&
+                    votingTokens.map((token: any) => {
+                      return (
+                        <SelectItem value={token[0]} key={token[0]}>
+                          {token[0]}
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col w-full gap-2 pt-2">
               <Label htmlFor="amount" className="flex justify-between pl-1 text-gray-700">
@@ -131,12 +158,12 @@ export const VoteUpModal = (props: any) => {
                 <div>
                   Max:{" "}
                   {formatNumber(
-                    BigNumber(oneTokenAmount)
+                    BigNumber(tokenAmount)
                       .dividedBy(10 ** 18)
                       .toNumber(),
                     0
                   )}{" "}
-                  {GOUVERNANCE_TOKEN.split("-")[0]}
+                  {selectedToken.split("-")[0]}
                 </div>
               </Label>
               <Input

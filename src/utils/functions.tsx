@@ -1,4 +1,6 @@
 import BigNumber from "bignumber.js";
+import { ElrondGatewayUrl } from "./config";
+import axios from "axios";
 
 export const convertEsdtToWei = (amount: BigNumber.Value, decimals?: number): BigNumber => {
   if (!amount) amount = "0";
@@ -45,3 +47,14 @@ export function formatSeconds(seconds: number) {
 
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 }
+
+export const getWalletToken = async (address: string, token: string): Promise<number> => {
+  const url = `${ElrondGatewayUrl}/address/${address}/esdt/${token}`;
+  try {
+    const res = await axios.get(url);
+    return Number(res.data.data.tokenData.balance);
+  } catch (error) {
+    console.error("Error fetching token balance:", error);
+    return 0;
+  }
+};

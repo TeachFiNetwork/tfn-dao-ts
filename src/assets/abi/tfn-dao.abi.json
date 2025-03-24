@@ -1,11 +1,11 @@
 {
     "buildInfo": {
         "rustc": {
-            "version": "1.81.0-nightly",
-            "commitHash": "fda509e817abeeecb5b76bc1de844f355675c81e",
-            "commitDate": "2024-06-25",
-            "channel": "Nightly",
-            "short": "rustc 1.81.0-nightly (fda509e81 2024-06-25)"
+            "version": "1.85.0",
+            "commitHash": "4d91de4e48198da2e33413efdcd9cd2cc0c46688",
+            "commitDate": "2025-02-17",
+            "channel": "Stable",
+            "short": "rustc 1.85.0 (4d91de4e4 2025-02-17)"
         },
         "contractCrate": {
             "name": "tfn-dao",
@@ -142,6 +142,17 @@
             ]
         },
         {
+            "name": "getVotingTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<multi<TokenIdentifier,BigUint>>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
             "name": "setVotingPeriod",
             "onlyOwner": true,
             "mutability": "mutable",
@@ -235,7 +246,22 @@
             ],
             "outputs": [
                 {
-                    "type": "BigUint"
+                    "type": "List<EsdtTokenPayment>"
+                }
+            ]
+        },
+        {
+            "name": "getRedeemableProposalIDs",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<u64>"
                 }
             ]
         },
@@ -277,7 +303,8 @@
             "inputs": [
                 {
                     "name": "status",
-                    "type": "ProposalStatus"
+                    "type": "optional<ProposalStatus>",
+                    "multi_arg": true
                 }
             ],
             "outputs": [
@@ -540,6 +567,60 @@
             ]
         },
         {
+            "name": "proposeAddVotingToken",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "weight",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "proposeRemoveVotingToken",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "proposeUpgradeFranchise",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "franchise_address",
+                    "type": "Address"
+                },
+                {
+                    "name": "args",
+                    "type": "optional<List<bytes>>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
             "name": "performAction",
             "mutability": "mutable",
             "inputs": [
@@ -580,6 +661,23 @@
                 {
                     "name": "arguments",
                     "type": "List<bytes>"
+                }
+            ]
+        },
+        "EsdtTokenPayment": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "token_identifier",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "token_nonce",
+                    "type": "u64"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
                 }
             ]
         },
