@@ -1,6 +1,6 @@
 import { useInteraction } from "@/utils/Interaction";
 import { contracts, GOUVERNANCE_TOKEN } from "@/utils/config";
-import { formatNumber } from "@/utils/functions";
+import { formatNumber, getWalletToken } from "@/utils/functions";
 import { Vote } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { U64Value } from "@multiversx/sdk-core/out";
@@ -32,6 +32,7 @@ export const VoteDownModal = (props: any) => {
   const { callMethod } = useInteraction();
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedToken, setSelectedToken] = useState(GOUVERNANCE_TOKEN);
+  const [tokenAmount, setTokenAmount] = useState<number>(0);
 
   const validationSchema = z.object({
     token: z.string().min(1, "Token is required"),
@@ -52,10 +53,16 @@ export const VoteDownModal = (props: any) => {
     setShowModal(false);
   };
 
+  const fetchTokenBalance = async (address: string, token: string) => {
+    const tokenTotal = await getWalletToken(address, token);
+    setTokenAmount(tokenTotal);
+  };
+
   useEffect(() => {
     if (hasPendingTransactions) {
       handleCloseModal();
     }
+    fetchTokenBalance(address, selectedToken);
   }, [hasPendingTransactions]);
 
   const {
@@ -128,6 +135,7 @@ export const VoteDownModal = (props: any) => {
                 onValueChange={(value) => {
                   setSelectedToken(value);
                   setValue("token", value);
+                  fetchTokenBalance(address, value);
                 }}>
                 <SelectTrigger>
                   <SelectValue placeholder={selectedToken} />
@@ -158,7 +166,7 @@ export const VoteDownModal = (props: any) => {
                 <div>
                   Max:{" "}
                   {formatNumber(
-                    BigNumber(oneTokenAmount)
+                    BigNumber(tokenAmount)
                       .dividedBy(10 ** 18)
                       .toNumber(),
                     0
