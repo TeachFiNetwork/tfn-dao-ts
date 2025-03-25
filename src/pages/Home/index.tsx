@@ -22,7 +22,7 @@ import {
 } from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
 import { Proposal } from "@/utils/types";
-import { U64Value } from "@multiversx/sdk-core/out";
+import { Address, AddressValue, U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";
@@ -40,6 +40,7 @@ export function Home() {
   const [countdownPasses, setCountdownPassed] = useState<boolean>(false);
   const [decimalsMap, setDecimalsMap] = useState(new Map<string, number>());
   const [votingTokens, setVotingTokens] = useState<string[]>([]);
+  const [redeemableProposals, setRedeemableProposals] = useState<number[]>([]);
   const navigate = useNavigate();
   // console.log(proposals);
 
@@ -111,11 +112,17 @@ export function Home() {
   };
 
   const redeemTokens = async (proposalId: number) => {
-    await callMethod({
-      contract: contracts.DAO,
-      method: "redeem",
-      args: [new U64Value(proposalId)],
-    });
+    try {
+      await callMethod({
+        contract: contracts.DAO,
+        method: "redeem",
+        args: [new U64Value(proposalId)],
+      });
+
+      setRedeemableProposals((prev) => prev.filter((id) => id !== proposalId));
+    } catch (error) {
+      console.error("Error redeeming tokens:", error);
+    }
   };
 
   const executeProposal = async (proposalId: number) => {
@@ -126,19 +133,25 @@ export function Home() {
     });
   };
 
+  const getRedeemableProposal = async () => {
+    const proposals = await viewMethod({
+      contract: contracts.DAO,
+      method: "getRedeemableProposalIDs",
+      args: [new AddressValue(new Address(address))],
+    }).catch((err) => {
+      console.log(err);
+    });
+    // Convert BigNumber objects to numbers for easier comparison
+    if (proposals && Array.isArray(proposals)) {
+      const proposalNumbers = proposals.map((id) => BigNumber(id).toNumber());
+      setRedeemableProposals(proposalNumbers);
+    } else {
+      setRedeemableProposals([]);
+    }
+  };
+
   useEffect(() => {
     getFranchise();
-    const getProposals = async () => {
-      const proposals = await viewMethod({
-        contract: contracts.DAO,
-        method: "getProposals",
-        args: [new U64Value(0), new U64Value(20)],
-      }).catch((err) => {
-        console.log(err);
-      });
-      setProposals(proposals);
-    };
-    getProposals();
     if (address) {
       const fetchTokenBalance = async () => {
         const tokenTotal = await getWalletToken(address, GOUVERNANCE_TOKEN);
@@ -146,12 +159,22 @@ export function Home() {
       };
       fetchTokenBalance();
       getVotiongPeriod();
+      getRedeemableProposal();
     }
+  }, [hasPendingTransactions]);
+
+  useEffect(() => {
     if (countdownPasses) {
-      getProposals();
+      getFranchise();
       setCountdownPassed(false);
     }
-  }, [hasPendingTransactions, countdownPasses]);
+  }, [countdownPasses]);
+
+  useEffect(() => {
+    if (address) {
+      getRedeemableProposal();
+    }
+  }, [address]);
 
   useEffect(() => {
     const fetchTokenInfo = async () => {
@@ -425,6 +448,7 @@ export function Home() {
                             variant="outline"
                             className="md:w-3/6 w-full border-2 border-[#00394F]"
                             onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
+                            disabled={!redeemableProposals.includes(BigNumber(token.id).toNumber())}
                             type="button">
                             Redeem
                           </Button>
@@ -441,6 +465,7 @@ export function Home() {
                             variant="outline"
                             className="w-3/6 border-2 border-[#00394F]"
                             onClick={() => redeemTokens(BigNumber(token.id).toNumber())}
+                            disabled={!redeemableProposals.includes(BigNumber(token.id).toNumber())}
                             type="button">
                             Redeem
                           </Button>
