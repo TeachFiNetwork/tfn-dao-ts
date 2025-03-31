@@ -62,8 +62,9 @@ export type Launchpad = {
 };
 
 export type ProposalCreation = {
+  title: string;
   description: string;
-  action: Action[];
+  launchpad_proposal: Launchpad;
 };
 
 export type Action = {

@@ -22,7 +22,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Address,
   AddressValue,
+  BigIntValue,
   BigUIntValue,
+  BooleanValue,
   BytesValue,
   Field,
   IAddress,
@@ -34,9 +36,9 @@ import {
 import { useGetAccount, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import axios from "axios";
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { BadgeInfo, CalendarIcon, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChangeEventHandler, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "../ui/checkbox";
@@ -50,9 +52,24 @@ const validationSchema = z
     description: z.string().min(1, "Description is required"),
     token: z.string().min(1, "Token is required"),
     paymentToken: z.string().min(1, "Payment token is required"),
-    price: z.string().refine((val) => parseFloat(val) > 0, "Price must be greater than 0"),
-    minBuy: z.string().refine((val) => parseFloat(val) > 0, "Min buy must be greater than 0"),
-    maxBuy: z.string().refine((val) => parseFloat(val) > 0, "Max buy is required"),
+    price: z
+      .string()
+      .regex(/^[0-9.]+$/, "Only numbers and decimal points are allowed")
+      .refine(
+        (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+        "Price must be greater than 0"
+      ),
+    minBuy: z
+      .string()
+      .regex(/^[0-9.]+$/, "Only numbers and decimal points are allowed")
+      .refine(
+        (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+        "Min buy must be greater than 0"
+      ),
+    maxBuy: z
+      .string()
+      .regex(/^[0-9.]+$/, "Only numbers and decimal points are allowed")
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, "Max buy is required"),
     startDate: z.number().min(1, "Start date is required"),
     endDate: z.number().min(1, "End date is required"),
     kycEnforced: z.number(),
@@ -82,7 +99,9 @@ export const AddProposalModal = (props: any) => {
   const { address } = useGetAccount();
   const { hasPendingTransactions } = useGetPendingTransactions();
   const [startDate, setStartDate] = useState<Date | undefined>();
+  const [startTimeValue, setStartTimeValue] = useState<string>("00:00");
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [endTimeValue, setEndTimeValue] = useState<string>("00:00");
   const [openStartDate, setOpenStartDate] = useState(false);
   const [openEndDate, setOpenEndDate] = useState(false);
   const [launchpadAddress, setLaunchpadAddress] = useState<IAddress>(new Address(""));
@@ -90,7 +109,31 @@ export const AddProposalModal = (props: any) => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [responseGate, setResponseGate] = useState(new Map<string, number>());
 
-  const { votingPeriod, decimalsMap } = props;
+  const { votingPeriod } = props;
+
+  const handleStartTimeChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const time = e.target.value;
+    if (!startDate) {
+      setStartTimeValue(time);
+      return;
+    }
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newSelectedDate = setHours(setMinutes(startDate, minutes), hours);
+    setStartDate(newSelectedDate);
+    setStartTimeValue(time);
+  };
+
+  const handleEndTimeChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const time = e.target.value;
+    if (!endDate) {
+      setEndTimeValue(time);
+      return;
+    }
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newSelectedDate = setHours(setMinutes(endDate, minutes), hours);
+    setEndDate(newSelectedDate);
+    setEndTimeValue(time);
+  };
 
   // const todayDate = new Date();
   // console.log(BigNumber(votingPeriod).toNumber());
@@ -178,12 +221,16 @@ export const AddProposalModal = (props: any) => {
     const date = selectedDate && selectedDate?.getTime() / 1000;
     if (selectedDate) {
       // Convert to UTC
-      const utcDate = new Date(Date.UTC(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        0, 0, 0
-      ));
+      const [hours, minutes] = startTimeValue.split(":").map((str) => parseInt(str, 10));
+      const utcDate = new Date(
+        Date.UTC(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          hours,
+          minutes
+        )
+      );
       setValue("startDate", utcDate.getTime() / 1000);
     } else {
       setValue("startDate", date ?? 0);
@@ -206,12 +253,16 @@ export const AddProposalModal = (props: any) => {
     const date = selectedDate && selectedDate?.getTime() / 1000;
     if (selectedDate) {
       // Convert to UTC
-      const utcDate = new Date(Date.UTC(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        0, 0, 0
-      ));
+      const [hours, minutes] = endTimeValue.split(":").map((str) => parseInt(str, 10));
+      const utcDate = new Date(
+        Date.UTC(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          hours,
+          minutes
+        )
+      );
       setValue("endDate", utcDate.getTime() / 1000);
     } else {
       setValue("endDate", date ?? 0);
@@ -221,6 +272,8 @@ export const AddProposalModal = (props: any) => {
   };
 
   const submitProposal = async (formData: Launchpad) => {
+    console.log(formData);
+
     const paymentTokenDecimals = responseGate.get(formData.paymentToken);
     const tokenDecimals = responseGate.get(formData.token);
 
@@ -233,43 +286,40 @@ export const AddProposalModal = (props: any) => {
       return;
     }
 
-    const proposalCreationType = TeachFiDao.getStruct("ProposalCreationArgs");
-    const proposalActionType = TeachFiDao.getStruct("Action");
+    const launchpadCreationType = TeachFiDao.getStruct("LaunchpadProposal");
 
-    const struct2 = List.fromItems([
-      new BytesValue(Buffer.from(Address.fromBech32(address).toHex(), "hex")),
-      new BytesValue(Buffer.from(numberToBytes(formData.kycEnforced))),
-      new BytesValue(Buffer.from(formData.title)),
-      new BytesValue(Buffer.from(formData.token)),
-      new BytesValue(Buffer.from(formData.paymentToken)),
-      new BytesValue(BNtoBytes(BigNumber(formData.price).multipliedBy(10 ** paymentTokenDecimals))),
-      new BytesValue(BNtoBytes(BigNumber(formData.minBuy).multipliedBy(10 ** tokenDecimals))),
-      new BytesValue(BNtoBytes(BigNumber(formData.maxBuy).multipliedBy(10 ** tokenDecimals))),
-      new BytesValue(BNtoBytes(BigNumber(formData.startDate))),
-      new BytesValue(BNtoBytes(BigNumber(formData.endDate))),
+    const struct2 = new Struct(launchpadCreationType, [
+      new Field(new BooleanValue(formData.kycEnforced === 1 ? true : false), "kyc_enforced"),
+      new Field(new TokenIdentifierValue(formData.token), "token"),
+      new Field(new TokenIdentifierValue(formData.paymentToken), "payment_token"),
+      new Field(
+        new BigUIntValue(BigNumber(formData.price).multipliedBy(10 ** paymentTokenDecimals)),
+        "price"
+      ),
+      new Field(
+        new BigUIntValue(BigNumber(formData.minBuy).multipliedBy(10 ** tokenDecimals)),
+        "min_buy_amount"
+      ),
+      new Field(
+        new BigUIntValue(BigNumber(formData.maxBuy).multipliedBy(10 ** tokenDecimals)),
+        "max_buy_amount"
+      ),
+      new Field(new U64Value(BigNumber(formData.startDate)), "start_time"),
+      new Field(new U64Value(BigNumber(formData.endDate)), "end_time"),
     ]);
 
-    const struct = new Struct(proposalActionType, [
-      new Field(new U64Value(60000000), "gas_limit"),
-      new Field(new AddressValue(launchpadAddress), "dest_address"),
-      new Field(new TokenIdentifierValue(""), "payment_token"),
-      new Field(new BigUIntValue(0), "payment_amount"),
-      new Field(new BytesValue(Buffer.from("newLaunchpad")), "endpoint_name"),
-      new Field(struct2, "arguments"),
-    ]);
-
-    const argsConstructor = [
-      new Field(new BytesValue(Buffer.from(formData.description)), "description"),
-      new Field(struct, "action"),
-    ];
-
-    const t = new Struct(proposalCreationType, argsConstructor);
     await callMethod({
       contract: contracts.DAO,
-      method: "propose",
-      args: [t],
+      method: "proposeNewLaunchpad",
+      args: [
+        new BytesValue(Buffer.from(formData.title)),
+        new BytesValue(Buffer.from(formData.description)),
+        struct2,
+      ],
     });
     reset();
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   return (
@@ -319,7 +369,6 @@ export const AddProposalModal = (props: any) => {
               />
               {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
             </div>
-
             <div className="flex flex-col w-full gap-2">
               <Label htmlFor="description" className="pl-1 text-gray-700">
                 Description
@@ -334,7 +383,6 @@ export const AddProposalModal = (props: any) => {
                 <p className="text-red-500 text-sm">{errors.description.message}</p>
               )}
             </div>
-
             <div className="flex flex-row w-full gap-4">
               <div className="flex flex-col w-full gap-2">
                 <Label htmlFor="tokenid" className="pl-1 text-gray-700">
@@ -403,13 +451,23 @@ export const AddProposalModal = (props: any) => {
                 )}
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row w-full gap-4">
               <div className="flex flex-col w-full gap-2">
                 <Label htmlFor="price" className="pl-1 text-gray-700">
                   Price
                 </Label>
-                <Input type="number" id="price" className="shadow" {...register("price")} />
+                <Input
+                  type="text"
+                  id="price"
+                  className="shadow"
+                  step="any"
+                  {...register("price", {
+                    onChange: (e) => {
+                      // Replace any non-numeric or non-decimal characters
+                      e.target.value = e.target.value.replace(/[^0-9.]/g, "");
+                    },
+                  })}
+                />
                 {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
               </div>
               <div className="flex flex-row w-full gap-2 ">
@@ -417,7 +475,18 @@ export const AddProposalModal = (props: any) => {
                   <Label htmlFor="minbuy" className="pl-1 text-gray-700">
                     Min Buy
                   </Label>
-                  <Input type="number" id="minbuy" className="shadow" {...register("minBuy")} />
+                  <Input
+                    type="text"
+                    id="minbuy"
+                    className="shadow"
+                    step="any"
+                    {...register("minBuy", {
+                      onChange: (e) => {
+                        // Replace any non-numeric or non-decimal characters
+                        e.target.value = e.target.value.replace(/[^0-9.]/g, "");
+                      },
+                    })}
+                  />
                   {errors.minBuy && <p className="text-red-500 text-sm">{errors.minBuy.message}</p>}
                 </div>
                 <div className="flex flex-col w-full gap-2">
@@ -425,11 +494,15 @@ export const AddProposalModal = (props: any) => {
                     Max buy
                   </Label>
                   <Input
-                    type="number"
+                    type="text"
                     id="maxbuy"
                     className="shadow"
+                    step="any"
                     {...register("maxBuy", {
                       onChange: (e) => {
+                        // Replace any non-numeric or non-decimal characters
+                        e.target.value = e.target.value.replace(/[^0-9.]/g, "");
+
                         const maxValue = parseFloat(e.target.value);
                         const minValue = parseFloat(getValues("minBuy"));
                         if (minValue && maxValue && minValue >= maxValue) {
@@ -469,8 +542,18 @@ export const AddProposalModal = (props: any) => {
                       )}
                     </div>
                     <PopoverContent
-                      className="w-auto p-0 relative bg-white !z-[9999]"
+                      className="w-auto flex flex-col p-0 relative bg-white !z-[9999]"
                       align="start">
+                      <div className="border border-gray-500 py-1 rounded-lg">
+                        <label className="px-5 py-2">
+                          Set the time:{" "}
+                          <input
+                            type="time"
+                            value={startTimeValue}
+                            onChange={handleStartTimeChange}
+                          />
+                        </label>
+                      </div>
                       <Calendar
                         mode="single"
                         selected={startDate}
@@ -504,7 +587,13 @@ export const AddProposalModal = (props: any) => {
                         <p className="text-red-500 text-sm">{errors.endDate.message}</p>
                       )}
                     </div>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto flex flex-col p-0" align="start">
+                      <div className="border border-gray-500 py-1 rounded-lg">
+                        <label className="px-5 py-2">
+                          Select time:{" "}
+                          <input type="time" value={endTimeValue} onChange={handleEndTimeChange} />
+                        </label>
+                      </div>
                       <Calendar
                         mode="single"
                         selected={endDate}
@@ -551,7 +640,11 @@ export const AddProposalModal = (props: any) => {
                 variant="outline"
                 className="w-full md:w-3/6"
                 type="button"
-                onClick={() => reset()}>
+                onClick={() => {
+                  reset();
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                }}>
                 Cancel
               </Button>
             </DialogPrimitive.Close>
