@@ -21,8 +21,8 @@ import {
   numberToBytes,
 } from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
-import { Proposal } from "@/utils/types";
-import { Address, AddressValue, U64Value } from "@multiversx/sdk-core/out";
+import { Proposal, ProposalCreation } from "@/utils/types";
+import { Address, AddressValue, StringValue, U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";
@@ -102,7 +102,7 @@ export function Home() {
     const franchise = await viewMethod({
       contract: contracts.DAO,
       method: "getProposals",
-      args: [new U64Value(0), new U64Value(20)],
+      args: [new U64Value(0), new U64Value(20), new U64Value(1)],
     }).catch((err) => {
       console.log(err);
     });
@@ -178,9 +178,11 @@ export function Home() {
 
   useEffect(() => {
     const fetchTokenInfo = async () => {
+      console.log(proposals);
+
       for (const item of proposals) {
-        await getResponseGate(Buffer.from(item.action.arguments[4]).toString());
-        await getResponseGate(Buffer.from(item.action.arguments[3]).toString());
+        await getResponseGate(Buffer.from(item.proposal_data.fields[0].payment_token).toString());
+        await getResponseGate(Buffer.from(item.proposal_data.fields[0].token).toString());
       }
     };
 
@@ -197,7 +199,7 @@ export function Home() {
       (proposal) => proposal.status.name.toLowerCase() === activeTab.toLowerCase()
     );
   }, [proposals, activeTab]);
-  // console.log(filteredProposals);
+  console.log(filteredProposals);
 
   return (
     <div className="flex flex-col w-full pt-40 md:px-10 px-5">
@@ -254,7 +256,7 @@ export function Home() {
                           Proposal {BigNumber(token.id).toNumber() + 1}
                         </h3>
                         <span className="text-gray-900/40 font-medium md:text-base text-sm">
-                          {Buffer.from(token.action.arguments[3]).toString()}
+                          {Buffer.from(token.proposal_data.fields[0].token).toString()}
                         </span>
                       </div>
                     </div>
@@ -307,58 +309,54 @@ export function Home() {
                       KYC
                       <p className="text-stone-500 font-normal">
                         {(() => {
-                          const bytes = token.action.arguments[1];
-                          return bytes[0] === numberToBytes(1)[0] ? "Yes" : "No";
+                          const bytes = token.proposal_data.fields[0].kyc_enforced;
+                          return bytes ? "Yes" : "No";
                         })()}
                       </p>
                     </span>
                     <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
                       Price
                       <p className="text-stone-500 font-normal">
-                        {BigNumber(bytesToBN(token.action.arguments[5]).toString())
+                        {BigNumber(token.proposal_data.fields[0].price.toString())
                           .dividedBy(
                             10 **
-                              (decimalsMap.get(Buffer.from(token.action.arguments[4]).toString()) ||
-                                0)
+                              (decimalsMap.get(token.proposal_data.fields[0].payment_token) || 0)
                           )
                           .toNumber() +
                           " " +
-                          Buffer.from(token.action.arguments[4]).toString().split("-")[0]}{" "}
+                          token.proposal_data.fields[0].payment_token.split("-")[0]}{" "}
                       </p>
                     </span>
                     <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
                       Min Buy
                       <p className="text-stone-500 font-normal">
-                        {BigNumber(bytesToBN(token.action.arguments[6]).toString())
+                        {BigNumber(token.proposal_data.fields[0].min_buy_amount)
                           .dividedBy(
-                            10 **
-                              (decimalsMap.get(Buffer.from(token.action.arguments[3]).toString()) ||
-                                18)
+                            10 ** (decimalsMap.get(token.proposal_data.fields[0].token) || 18)
                           )
                           .toNumber() +
                           " " +
-                          Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}
+                          token.proposal_data.fields[0].token.split("-")[0]}{" "}
                       </p>
                     </span>
                     <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
                       Max Buy
                       <p className="text-stone-500 font-normal">
-                        {BigNumber(bytesToBN(token.action.arguments[7]).toString())
+                        {BigNumber(token.proposal_data.fields[0].max_buy_amount)
                           .dividedBy(
                             10 **
-                              (decimalsMap.get(Buffer.from(token.action.arguments[3]).toString()) ||
-                                18)
+                              (decimalsMap.get(token.proposal_data.fields[0].payment_token) || 18)
                           )
                           .toNumber() +
                           " " +
-                          Buffer.from(token.action.arguments[3]).toString().split("-")[0]}{" "}
+                          token.proposal_data.fields[0].payment_token.split("-")[0]}{" "}
                       </p>
                     </span>
                     <span className="flex justify-between gap-1 text-base font-light text-gray-500/80 pb-1">
                       Start time
                       <p className="text-stone-500 font-normal">
                         {new Date(
-                          bytesToBN(token.action.arguments[8]).toNumber() * 1000
+                          BigNumber(token.proposal_data.fields[0].start_time).toNumber() * 1000
                         ).toLocaleDateString()}
                       </p>
                     </span>
@@ -366,7 +364,7 @@ export function Home() {
                       End time
                       <p className="text-stone-500 font-normal">
                         {new Date(
-                          bytesToBN(token.action.arguments[9]).toNumber() * 1000
+                          BigNumber(token.proposal_data.fields[0].end_time).toNumber() * 1000
                         ).toLocaleDateString()}
                       </p>
                     </span>

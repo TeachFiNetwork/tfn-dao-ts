@@ -52,13 +52,13 @@ export type Launchpad = {
   title: string;
   description: string;
   token: string;
-  paymentToken: string;
+  payment_token: string;
   price: string;
-  minBuy: string;
-  maxBuy: string;
-  startDate: number;
-  endDate: number;
-  kycEnforced: number;
+  min_buy_amount: string;
+  max_buy_amount: string;
+  start_time: number;
+  end_time: number;
+  kyc_enforced: number;
 };
 
 export type ProposalCreation = {
@@ -80,12 +80,24 @@ export type Proposal = {
   id: BigNumber.Value;
   proposer: IAddress;
   title: string;
+  description: string;
   creation_timestamp: BigNumber.Value;
   status: StatusProposal;
+  proposal_data: ProposalData;
+  proposal_type: ProposalType;
   was_executed: boolean;
-  action: Action;
   num_upvotes: BigNumber.Value;
   num_downvotes: BigNumber.Value;
+};
+
+type ProposalData = {
+  name: string;
+  fields: Launchpad[];
+};
+
+type ProposalType = {
+  name: string;
+  fields: [];
 };
 
 type StatusProposal = {

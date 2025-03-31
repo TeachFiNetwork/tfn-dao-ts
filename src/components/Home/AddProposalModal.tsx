@@ -198,13 +198,13 @@ export const AddProposalModal = (props: any) => {
       title: "",
       description: "",
       token: "",
-      paymentToken: "",
+      payment_token: "",
       price: "",
-      minBuy: "",
-      maxBuy: "",
-      startDate: 0,
-      endDate: 0,
-      kycEnforced: 1,
+      min_buy_amount: "",
+      max_buy_amount: "",
+      start_time: 0,
+      end_time: 0,
+      kyc_enforced: 1,
     },
     mode: "onChange",
     resolver: zodResolver(validationSchema),
@@ -231,24 +231,24 @@ export const AddProposalModal = (props: any) => {
           minutes
         )
       );
-      setValue("startDate", utcDate.getTime() / 1000);
+      setValue("start_time", utcDate.getTime() / 1000);
     } else {
-      setValue("startDate", date ?? 0);
+      setValue("start_time", date ?? 0);
     }
-    clearErrors("startDate"); // Add this line to clear the error
+    clearErrors("start_time"); // Add this line to clear the error
     setOpenStartDate(false); // Close the popover after selection
   };
 
   const handleEndDateSelect = (selectedDate: Date | undefined) => {
     if (!startDate) {
-      setError("endDate", {
+      setError("end_time", {
         type: "onChange",
         message: "Please select start date first",
       });
       return;
     }
 
-    clearErrors("endDate");
+    clearErrors("end_time");
     setEndDate(selectedDate);
     const date = selectedDate && selectedDate?.getTime() / 1000;
     if (selectedDate) {
@@ -263,9 +263,9 @@ export const AddProposalModal = (props: any) => {
           minutes
         )
       );
-      setValue("endDate", utcDate.getTime() / 1000);
+      setValue("end_time", utcDate.getTime() / 1000);
     } else {
-      setValue("endDate", date ?? 0);
+      setValue("end_time", date ?? 0);
     }
     trigger();
     setOpenEndDate(false); // Close the popover after selection
@@ -274,7 +274,7 @@ export const AddProposalModal = (props: any) => {
   const submitProposal = async (formData: Launchpad) => {
     console.log(formData);
 
-    const paymentTokenDecimals = responseGate.get(formData.paymentToken);
+    const paymentTokenDecimals = responseGate.get(formData.payment_token);
     const tokenDecimals = responseGate.get(formData.token);
 
     if (!paymentTokenDecimals || !tokenDecimals) {
@@ -288,24 +288,24 @@ export const AddProposalModal = (props: any) => {
 
     const launchpadCreationType = TeachFiDao.getStruct("LaunchpadProposal");
 
-    const struct2 = new Struct(launchpadCreationType, [
-      new Field(new BooleanValue(formData.kycEnforced === 1 ? true : false), "kyc_enforced"),
+    const launchpadProposalStruct = new Struct(launchpadCreationType, [
+      new Field(new BooleanValue(formData.kyc_enforced === 1 ? true : false), "kyc_enforced"),
       new Field(new TokenIdentifierValue(formData.token), "token"),
-      new Field(new TokenIdentifierValue(formData.paymentToken), "payment_token"),
+      new Field(new TokenIdentifierValue(formData.payment_token), "payment_token"),
       new Field(
         new BigUIntValue(BigNumber(formData.price).multipliedBy(10 ** paymentTokenDecimals)),
         "price"
       ),
       new Field(
-        new BigUIntValue(BigNumber(formData.minBuy).multipliedBy(10 ** tokenDecimals)),
+        new BigUIntValue(BigNumber(formData.min_buy_amount).multipliedBy(10 ** tokenDecimals)),
         "min_buy_amount"
       ),
       new Field(
-        new BigUIntValue(BigNumber(formData.maxBuy).multipliedBy(10 ** tokenDecimals)),
+        new BigUIntValue(BigNumber(formData.max_buy_amount).multipliedBy(10 ** tokenDecimals)),
         "max_buy_amount"
       ),
-      new Field(new U64Value(BigNumber(formData.startDate)), "start_time"),
-      new Field(new U64Value(BigNumber(formData.endDate)), "end_time"),
+      new Field(new U64Value(BigNumber(formData.start_time)), "start_time"),
+      new Field(new U64Value(BigNumber(formData.end_time)), "end_time"),
     ]);
 
     await callMethod({
@@ -314,7 +314,7 @@ export const AddProposalModal = (props: any) => {
       args: [
         new BytesValue(Buffer.from(formData.title)),
         new BytesValue(Buffer.from(formData.description)),
-        struct2,
+        launchpadProposalStruct,
       ],
     });
     reset();
@@ -424,21 +424,21 @@ export const AddProposalModal = (props: any) => {
                   type="text"
                   id="paymenttoken"
                   className="shadow"
-                  {...register("paymentToken", {
+                  {...register("payment_token", {
                     onBlur: async (event) => {
                       try {
                         if (event.target.value.includes(" ")) {
-                          setError("paymentToken", {
+                          setError("payment_token", {
                             type: "manual",
                             message: "Token identifier cannot contain spaces",
                           });
                         } else {
                           await getResponseGate(event.target.value);
                           // clearErrors("token");
-                          await trigger("paymentToken", { shouldFocus: true });
+                          await trigger("payment_token", { shouldFocus: true });
                         }
                       } catch (error) {
-                        setError("paymentToken", {
+                        setError("payment_token", {
                           type: "manual",
                           message: "Invalid token identifier",
                         });
@@ -446,8 +446,8 @@ export const AddProposalModal = (props: any) => {
                     },
                   })}
                 />
-                {errors.paymentToken && (
-                  <p className="text-red-500 text-sm">{errors.paymentToken.message}</p>
+                {errors.payment_token && (
+                  <p className="text-red-500 text-sm">{errors.payment_token.message}</p>
                 )}
               </div>
             </div>
@@ -480,14 +480,16 @@ export const AddProposalModal = (props: any) => {
                     id="minbuy"
                     className="shadow"
                     step="any"
-                    {...register("minBuy", {
+                    {...register("min_buy_amount", {
                       onChange: (e) => {
                         // Replace any non-numeric or non-decimal characters
                         e.target.value = e.target.value.replace(/[^0-9.]/g, "");
                       },
                     })}
                   />
-                  {errors.minBuy && <p className="text-red-500 text-sm">{errors.minBuy.message}</p>}
+                  {errors.min_buy_amount && (
+                    <p className="text-red-500 text-sm">{errors.min_buy_amount.message}</p>
+                  )}
                 </div>
                 <div className="flex flex-col w-full gap-2">
                   <Label htmlFor="maxbuy" className="pl-1 text-gray-700">
@@ -498,25 +500,27 @@ export const AddProposalModal = (props: any) => {
                     id="maxbuy"
                     className="shadow"
                     step="any"
-                    {...register("maxBuy", {
+                    {...register("max_buy_amount", {
                       onChange: (e) => {
                         // Replace any non-numeric or non-decimal characters
                         e.target.value = e.target.value.replace(/[^0-9.]/g, "");
 
                         const maxValue = parseFloat(e.target.value);
-                        const minValue = parseFloat(getValues("minBuy"));
+                        const minValue = parseFloat(getValues("min_buy_amount"));
                         if (minValue && maxValue && minValue >= maxValue) {
-                          setError("minBuy", {
+                          setError("min_buy_amount", {
                             type: "manual",
                             message: "Min buy must be lower than max buy",
                           });
                         } else {
-                          clearErrors("minBuy");
+                          clearErrors("min_buy_amount");
                         }
                       },
                     })}
                   />
-                  {errors.maxBuy && <p className="text-red-500 text-sm">{errors.maxBuy.message}</p>}
+                  {errors.max_buy_amount && (
+                    <p className="text-red-500 text-sm">{errors.max_buy_amount.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -537,8 +541,8 @@ export const AddProposalModal = (props: any) => {
                           {startDate ? format(startDate, "PPP") : <span>Select start</span>}
                         </Button>
                       </PopoverTrigger>
-                      {errors.startDate && (
-                        <p className="text-red-500 text-sm">{errors.startDate.message}</p>
+                      {errors.start_time && (
+                        <p className="text-red-500 text-sm">{errors.start_time.message}</p>
                       )}
                     </div>
                     <PopoverContent
@@ -583,8 +587,8 @@ export const AddProposalModal = (props: any) => {
                           {endDate ? format(endDate, "PPP") : <span>Select end</span>}
                         </Button>
                       </PopoverTrigger>
-                      {errors.endDate && (
-                        <p className="text-red-500 text-sm">{errors.endDate.message}</p>
+                      {errors.end_time && (
+                        <p className="text-red-500 text-sm">{errors.end_time.message}</p>
                       )}
                     </div>
                     <PopoverContent className="w-auto flex flex-col p-0" align="start">
@@ -618,9 +622,9 @@ export const AddProposalModal = (props: any) => {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="kyc"
-                      checked={watch("kycEnforced") === 1}
+                      checked={watch("kyc_enforced") === 1}
                       onCheckedChange={(checked) => {
-                        setValue("kycEnforced", checked ? 1 : 0);
+                        setValue("kyc_enforced", checked ? 1 : 0);
                       }}
                     />
                     <label
