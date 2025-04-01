@@ -1,16 +1,12 @@
 import { RouteType } from "@multiversx/sdk-dapp/types";
 import { Home } from "./pages/Home";
 import { Unlock } from "./pages/Unlock";
+import { BoardPanel } from "./pages/BoardPanel";
 
 export const routeNames = {
   home: "/",
   unlock: "/unlock",
-  // vision: "/vision",
-  // statistics: "/statistics",
-  // partners: "/partners",
-  // team: "/team",
-  // about: "/about",
-  // applications: "/applications",
+  boardPanel: "/boardPanel",
 };
 
 interface RouteWithTitleType extends RouteType {
@@ -27,5 +23,10 @@ export const routes: RouteWithTitleType[] = [
     path: routeNames.unlock,
     title: "Unlock",
     component: Unlock,
+  },
+  {
+    path: routeNames.boardPanel,
+    title: "Board Panel",
+    component: BoardPanel,
   },
 ];

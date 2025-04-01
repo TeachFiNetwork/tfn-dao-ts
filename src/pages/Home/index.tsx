@@ -13,16 +13,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { contracts, ElrondGatewayUrl, GOUVERNANCE_TOKEN } from "@/utils/config";
-import {
-  bytesToBN,
-  formatAddress,
-  formatNumber,
-  getWalletToken,
-  numberToBytes,
-} from "@/utils/functions";
+import { formatAddress, formatNumber, getWalletToken } from "@/utils/functions";
 import { useInteraction } from "@/utils/Interaction";
-import { Proposal, ProposalCreation } from "@/utils/types";
-import { Address, AddressValue, StringValue, U64Value } from "@multiversx/sdk-core/out";
+import { Proposal } from "@/utils/types";
+import { Address, AddressValue, U64Value } from "@multiversx/sdk-core/out";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import axios from "axios";
 import BigNumber from "bignumber.js";

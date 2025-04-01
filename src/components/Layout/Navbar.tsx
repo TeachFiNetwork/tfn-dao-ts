@@ -52,15 +52,6 @@ export const Navbar = () => {
     logout("/").then(() => window.location.reload());
   };
 
-  const navItems = [{ label: "Applications", href: "#applications" }];
-
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b">
       <div className="md:px-10 px-5 py-4">
@@ -68,7 +59,9 @@ export const Navbar = () => {
           <a href="/" className="flex items-center">
             <img src={logo} alt="TeachFi" />
           </a>
-
+          <Button className="" onClick={() => navigate("/boardPanel")} variant="ghost">
+            Board Panel
+          </Button>
           {isLoggedIn ? (
             <div className="flex gap-2">
               <div className="sm:flex hidden items-center gap-1">
