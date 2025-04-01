@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,14 +21,11 @@ import { Launchpad } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Address,
-  AddressValue,
-  BigIntValue,
   BigUIntValue,
   BooleanValue,
   BytesValue,
   Field,
   IAddress,
-  List,
   Struct,
   TokenIdentifierValue,
   U64Value,
@@ -36,15 +33,14 @@ import {
 import { useGetAccount, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import axios from "axios";
+import BigNumber from "bignumber.js";
 import { format, setHours, setMinutes } from "date-fns";
 import { BadgeInfo, CalendarIcon, Plus } from "lucide-react";
 import { ChangeEventHandler, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "../ui/checkbox";
-import BigNumber from "bignumber.js";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { BNtoBytes, numberToBytes } from "@/utils/functions";
 
 const validationSchema = z
   .object({
@@ -333,10 +329,10 @@ export const AddProposalModal = (props: any) => {
               disabled={!address}
               onClick={() => setShowModal(!showModal)}>
               <Plus className="text-emerald-500" />
-              Launchpad
+              Proposal
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Add a new Launchpad Proposal</TooltipContent>
+          <TooltipContent>Add a new Proposal</TooltipContent>
         </Tooltip>
       </DialogTrigger>
 

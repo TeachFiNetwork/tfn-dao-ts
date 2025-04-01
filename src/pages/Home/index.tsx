@@ -36,6 +36,7 @@ export function Home() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("viewAll");
+  const [proposalTypeSelect, setProposalTypeSelect] = useState("New Launchpad");
   const [votingPeriod, setVotingPeriod] = useState<number>(0);
   const [countdownPasses, setCountdownPassed] = useState<boolean>(false);
   const [decimalsMap, setDecimalsMap] = useState(new Map<string, number>());
@@ -99,10 +100,11 @@ export function Home() {
   };
 
   const getFranchise = async () => {
+    const proposalTypeToNumber = proposalTypeSelect === "New Launchpad" ? 1 : 2;
     const franchise = await viewMethod({
       contract: contracts.DAO,
       method: "getProposals",
-      args: [new U64Value(0), new U64Value(20), new U64Value(1)],
+      args: [new U64Value(0), new U64Value(20), new U64Value(proposalTypeToNumber)],
     }).catch((err) => {
       console.log(err);
     });
@@ -161,7 +163,7 @@ export function Home() {
       getVotiongPeriod();
       getRedeemableProposal();
     }
-  }, [hasPendingTransactions]);
+  }, [hasPendingTransactions, proposalTypeSelect]);
 
   useEffect(() => {
     if (countdownPasses) {
@@ -222,7 +224,18 @@ export function Home() {
             <TabsTrigger value="executed">Executed</TabsTrigger>
           </TabsList>
         </Tabs>
-        <AddProposalModal votingPeriod={votingPeriod} decimalsMap={decimalsMap} />
+        <div className="flex gap-2">
+          <Select onValueChange={setProposalTypeSelect}>
+            <SelectTrigger>
+              <SelectValue placeholder={proposalTypeSelect} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="New Launchpad">New Launchpad</SelectItem>
+              <SelectItem value="New Transfer">New Transfer</SelectItem>
+            </SelectContent>
+          </Select>
+          <AddProposalModal votingPeriod={votingPeriod} decimalsMap={decimalsMap} />
+        </div>
       </div>
 
       <div className="flex md:hidden flex-col justify-between w-full gap-2">
