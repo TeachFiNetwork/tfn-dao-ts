@@ -1,8 +1,5 @@
 import { useGetAccount, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { BadgeInfo, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
+import { ChangeEventHandler, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +8,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { BadgeInfo, Plus } from "lucide-react";
 import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { U32Value } from "@multiversx/sdk-core/out";
+import { contracts } from "@/utils/config";
+import { useInteraction } from "@/utils/Interaction";
 
-export const ProposeAddMember = () => {
+export const ChangeBoardQuorum = () => {
   const { address } = useGetAccount();
   const { hasPendingTransactions } = useGetPendingTransactions();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [newBoardQuorum, setNewBoardQuorum] = useState<number>(0);
+  const { callMethod } = useInteraction();
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -28,6 +33,14 @@ export const ProposeAddMember = () => {
       handleCloseModal();
     }
   }, [hasPendingTransactions]);
+
+  const handleChangeBoardQuorum = async (boardQuorum: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "proposeChangeBoardQuorum",
+      args: [new U32Value(boardQuorum)],
+    });
+  };
 
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -44,13 +57,19 @@ export const ProposeAddMember = () => {
           <div className="p-3 border w-12 h-12 rounded-xl flex justify-center items-center shadow">
             <BadgeInfo className="!w-6 !h-6" />
           </div>
-          <DialogTitle className="pt-6">Propose new Board Member</DialogTitle>
+          <DialogTitle className="pt-6">Change Board Quorum</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col w-full gap-2">
-          <Label htmlFor="address" className="pl-1 text-gray-700">
-            Address
+          <Label htmlFor="quorumMembers" className="pl-1 text-gray-700">
+            Quorum members
           </Label>
-          <Input type="text" id="address" placeholder="Address" className="shadow" />
+          <Input
+            type="number"
+            id="quorumMembers"
+            placeholder="Quorum members"
+            className="shadow"
+            onChange={(e) => setNewBoardQuorum(Number(e.target.value))}
+          />
         </div>
 
         <DialogFooter className="w-full pt-8 gap-1 md:gap-0 flex items-center !justify-center sticky bottom-0 bg-white mt-auto">
@@ -66,8 +85,9 @@ export const ProposeAddMember = () => {
           <Button
             variant="outline"
             className="bg-[#00394F] hover:bg-[#00394F]/90 text-white hover:text-white w-full md:w-3/6 rounded-lg"
+            onClick={() => handleChangeBoardQuorum(newBoardQuorum)}
             type="submit">
-            Propose
+            Change
           </Button>
         </DialogFooter>
       </DialogContent>

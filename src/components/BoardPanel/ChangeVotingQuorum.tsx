@@ -1,8 +1,5 @@
 import { useGetAccount, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { BadgeInfo, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +8,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { BadgeInfo, Plus } from "lucide-react";
 import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { contracts } from "@/utils/config";
+import { useInteraction } from "@/utils/Interaction";
+import { U32Value } from "@multiversx/sdk-core/out";
 
-export const ProposeAddMember = () => {
+export const ChangeVotingQuorum = () => {
   const { address } = useGetAccount();
   const { hasPendingTransactions } = useGetPendingTransactions();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const { callMethod } = useInteraction();
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -28,6 +32,14 @@ export const ProposeAddMember = () => {
       handleCloseModal();
     }
   }, [hasPendingTransactions]);
+
+  const handleChangeVotingQuorum = async (boardQuorum: number) => {
+    await callMethod({
+      contract: contracts.DAO,
+      method: "proposeChangeBoardQuorum",
+      args: [new U32Value(boardQuorum)],
+    });
+  };
 
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>

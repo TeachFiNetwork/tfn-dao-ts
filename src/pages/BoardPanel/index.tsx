@@ -1,4 +1,8 @@
+import { AddVotingToken } from "@/components/BoardPanel/AddVotingToken";
+import { ChangeBoardQuorum } from "@/components/BoardPanel/ChangeBoardQuorum";
 import { ProposeAddMember } from "@/components/BoardPanel/ProposeAddMember";
+import { RemoveBoardMember } from "@/components/BoardPanel/RemoveBoardMember";
+import { RemoveVotingToken } from "@/components/BoardPanel/RemoveVotingToken";
 import {
   Select,
   SelectContent,
@@ -15,58 +19,9 @@ import { useEffect, useState } from "react";
 
 export const BoardPanel = () => {
   const [proposalTypeSelect, setProposalTypeSelect] = useState("Propose add board member");
-  const [boardMembers, setBoardMembers] = useState<Address[]>([]);
-  const [boardQuorum, setBoardQuorum] = useState<number>(0);
-  const [votingTokens, setVotingTokens] = useState<string[]>([]);
-  const [quorum, setQuorum] = useState<number>(0);
-  const [votingPeriod, setVotingPeriod] = useState<number>(0);
+  const [contractInfo, setContractInfo] = useState<any>({});
   const { viewMethod } = useInteraction();
   const { hasPendingTransactions } = useGetPendingTransactions();
-
-  const getBoardMembers = async () => {
-    const boardMembers = await viewMethod({
-      contract: contracts.DAO,
-      method: "getBoardMembers",
-      args: [],
-    });
-    setBoardMembers(boardMembers);
-  };
-
-  const getBoardQuorum = async () => {
-    const quorum = await viewMethod({
-      contract: contracts.DAO,
-      method: "getBoardQuorum",
-      args: [],
-    });
-    setBoardQuorum(quorum);
-  };
-
-  const getVotingTokens = async () => {
-    const votingTokens = await viewMethod({
-      contract: contracts.DAO,
-      method: "getVotingTokens",
-      args: [],
-    });
-    setVotingTokens(votingTokens);
-  };
-
-  const getQuorum = async () => {
-    const quorum = await viewMethod({
-      contract: contracts.DAO,
-      method: "getQuorum",
-      args: [],
-    });
-    setQuorum(quorum);
-  };
-
-  const getVotingPeriod = async () => {
-    const votingPeriod = await viewMethod({
-      contract: contracts.DAO,
-      method: "getVotingPeriod",
-      args: [],
-    });
-    setVotingPeriod(votingPeriod);
-  };
 
   const formatVotingPeriod = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
@@ -75,15 +30,20 @@ export const BoardPanel = () => {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
+  const getContractInfo = async () => {
+    const contractInfo = await viewMethod({
+      contract: contracts.DAO,
+      method: "getContractInfo",
+      args: [],
+    });
+    setContractInfo(contractInfo);
+  };
+
   useEffect(() => {
-    getBoardMembers();
-    getBoardQuorum();
-    getVotingTokens();
-    getQuorum();
-    getVotingPeriod();
+    getContractInfo();
   }, [hasPendingTransactions]);
 
-  console.log(votingTokens);
+  console.log(contractInfo);
 
   return (
     <div className="flex flex-col h-[70dvh] pt-20 w-full md:px-10 px-5">
@@ -122,7 +82,7 @@ export const BoardPanel = () => {
               <SelectItem value="Propose upgrade franchise">Propose upgrade franchise</SelectItem>
             </SelectContent>
           </Select>
-          <ProposeAddMember />
+          <RemoveVotingToken tokenIdentifier={contractInfo.voting_tokens} />
         </div>
       </div>
 
@@ -130,7 +90,7 @@ export const BoardPanel = () => {
         <div className="flex flex-col justify-start items-start py-3 px-3 mt-3 border border-gray-500 rounded-xl w-3/4">
           <h2 className="text-xl font-semibold underline">Board members</h2>
           <div>
-            {boardMembers.map((member, index) => {
+            {contractInfo.board_members?.map((member: any, index: number) => {
               return <div key={index}>{index + 1 + ". " + member.toBech32()}</div>;
             })}
           </div>
@@ -138,8 +98,18 @@ export const BoardPanel = () => {
         <div className="flex flex-col justify-start items-start py-3 px-3 mt-3 border border-gray-500 rounded-xl w-1/4">
           <h2 className="text-xl font-semibold underline">Voting tokens</h2>
           <div className="text-base font-medium">
-            {votingTokens.map((tokens, index) => {
-              return <div key={index}>{index + 1 + ". " + tokens[0]}</div>;
+            {contractInfo.voting_tokens?.map((token: any, index: number) => {
+              return (
+                <div key={index} className="flex flex-col">
+                  <div>{index + 1 + ". " + token}</div>
+                  <div>
+                    Vote weight:{" "}
+                    {BigNumber(contractInfo.voting_token_weights[index])
+                      .dividedBy(10 ** 18)
+                      .toNumber()}
+                  </div>
+                </div>
+              );
             })}
           </div>
         </div>
@@ -147,17 +117,23 @@ export const BoardPanel = () => {
       <div className="flex w-full gap-3">
         <div className="flex flex-col justify-start items-start py-3 px-3 mt-3 border border-gray-500 rounded-xl w-1/3">
           <h2 className="text-xl font-semibold underline">Board quorum</h2>
-          <div className="text-base font-medium">{BigNumber(boardQuorum).toNumber()}</div>
+          <div className="text-base font-medium">
+            {contractInfo.board_quorum ? BigNumber(contractInfo.board_quorum).toNumber() : 0}
+          </div>
         </div>
         <div className="flex flex-col justify-start items-start py-3 px-3 mt-3 border border-gray-500 rounded-xl w-1/3">
           <h2 className="text-xl font-semibold underline">Voting period</h2>
           <div className="text-base font-medium">
-            {formatVotingPeriod(BigNumber(votingPeriod).toNumber())}
+            {contractInfo.voting_period
+              ? formatVotingPeriod(BigNumber(contractInfo.voting_period).toNumber())
+              : "0d 0h 0m"}
           </div>
         </div>
         <div className="flex flex-col justify-start items-start py-3 px-3 mt-3 border border-gray-500 rounded-xl w-1/3">
           <h2 className="text-xl font-semibold underline">Quorum</h2>
-          <div className="text-base font-medium">{BigNumber(quorum).toNumber()}</div>
+          <div className="text-base font-medium">
+            {contractInfo.quorum ? BigNumber(contractInfo.quorum).toNumber() : 0}
+          </div>
         </div>
       </div>
     </div>
